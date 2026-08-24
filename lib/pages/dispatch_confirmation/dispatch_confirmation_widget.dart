@@ -614,7 +614,7 @@ class _DispatchConfirmationWidgetState
                                       ),
                                       Text(
                                         'Via Outer Ring Rd',
-                                        style: GoogleFonts.roboto(color: Colors.emeraldAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.roboto(color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
