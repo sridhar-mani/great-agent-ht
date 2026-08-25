@@ -22,9 +22,13 @@ class AIAnalysisResultWidget extends StatefulWidget {
 
 class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
   late AIAnalysisResultModel _model;
-  bool isCallbackConfirmed = true;
-
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Workflow state flags
+  bool initialTroubleshootingAttempted = false;
+  bool initialTroubleshootingFailed = false;
+  bool aiVoiceCallCompleted = false;
+  String voiceCallAnswer = '';
 
   @override
   void initState() {
@@ -38,109 +42,40 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
     super.dispose();
   }
 
-  void _showCallbackModal() {
-    showModalBottomSheet(
+  // COMPULSORY AI VOICE AGENT CALL MODAL
+  void _showAIVoiceCallModal({bool autoTriggered = false}) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0F172A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A237E),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.indigoAccent, width: 2),
-              ),
-              child: const Icon(Icons.phone_in_talk_rounded, color: Colors.amberAccent, size: 30),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'ServiceOps AI Voice Agent',
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Pre-Analyzed Clarification Call',
-              style: GoogleFonts.roboto(fontSize: 12, color: Colors.indigoAccent),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF334155)),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      barrierDismissible: false,
+      builder: (dialogContext) => _AIVoiceCallDialog(
+        onCallComplete: (answer) {
+          setState(() {
+            aiVoiceCallCompleted = true;
+            voiceCallAnswer = answer;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF065F46),
+              content: Row(
                 children: [
-                  Text(
-                    'AI QUESTION (Adaptive Interviewer):',
-                    style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigoAccent),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '"Hello Arun, telemetry confirms thermal shutdown. Does Generator ABC123 continue running when idle at no load?"',
-                    style: GoogleFonts.roboto(fontSize: 13, color: Colors.white, fontStyle: FontStyle.italic, height: 1.4),
+                  const Icon(Icons.verified_rounded, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI Diagnostic Certification Complete. Field Dispatch Authorized!',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        isCallbackConfirmed = true;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          backgroundColor: Color(0xFF065F46),
-                          content: Text('Answer "Yes" recorded. Confidence updated to 89%.'),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.check, color: Colors.white, size: 18),
-                    label: Text('Yes (Runs at Idle)', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF64748B)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text('No / Unsure', style: GoogleFonts.inter(color: Colors.white70)),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
+  // GUIDED SAFE FIX / INITIAL TROUBLESHOOTING MODAL
   void _showSafeFixModal() {
     showModalBottomSheet(
       context: context,
@@ -167,12 +102,16 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                         color: FlutterFlowTheme.of(context).warning10,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.shield_outlined, color: FlutterFlowTheme.of(context).onSurface, size: 20),
+                      child: Icon(Icons.shield_outlined,
+                          color: FlutterFlowTheme.of(context).onSurface, size: 20),
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Guided Safe Fix (Precautionary)',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: FlutterFlowTheme.of(context).primaryText),
+                      'Initial Guided Safe-Fix Steps',
+                      style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: FlutterFlowTheme.of(context).primaryText),
                     ),
                   ],
                 ),
@@ -182,27 +121,102 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
-              'Safety Guard Agent note: No permanent remote fix approved for cooling restriction. Complete these checks before restart:',
-              style: GoogleFonts.roboto(fontSize: 12, color: FlutterFlowTheme.of(context).secondaryText),
+              'Safety Protocol: Execute these 3 non-invasive checks to test if thermal runaway can be mitigated before escalation:',
+              style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  color: FlutterFlowTheme.of(context).secondaryText),
             ),
             const SizedBox(height: 16),
-            _buildCheckStep('1', 'Allow Engine Cool Down (15 min)', 'Do not service hose assembly while block temp is > 60°C.'),
+            _buildCheckStep('1', 'Allow Engine Cool Down (15 min)',
+                'Do not service hose assembly while block temp is > 60°C.'),
             const SizedBox(height: 10),
-            _buildCheckStep('2', 'Inspect Hose Clamp Screw', 'Turn clockwise with 8mm driver 1.5 turns to check for slippage.'),
+            _buildCheckStep('2', 'Inspect Hose Clamp Torque',
+                'Turn clockwise with 8mm driver 1.5 turns to check for bolt slip.'),
             const SizedBox(height: 10),
-            _buildCheckStep('3', 'Check Expansion Tank Level', 'Verify fluid level is between MIN and MAX markers.'),
+            _buildCheckStep('3', 'Verify Expansion Tank Level',
+                'Ensure coolant reservoir level is between MIN and MAX marks.'),
             const SizedBox(height: 20),
-            ButtonWidget(
-              content: 'Dispatch Technician Instead',
-              variant: 'primary',
-              size: 'large',
-              fullWidth: true,
-              onTap: () {
-                Navigator.pop(context);
-                context.goNamed('DispatchConfirmation');
-              },
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: FlutterFlowTheme.of(context).primaryBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: FlutterFlowTheme.of(context).alternate),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Restart Test Result (Under Load):',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primaryText),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              initialTroubleshootingAttempted = true;
+                              initialTroubleshootingFailed = false;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: Color(0xFF065F46),
+                                content: Text('Issue marked as resolved by safe-fix.'),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF10B981)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Text('Resolved (Normal)',
+                              style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF10B981))),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              initialTroubleshootingAttempted = true;
+                              initialTroubleshootingFailed = true;
+                            });
+                            // Automatically launch the COMPULSORY AI Voice Agent Call
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              _showAIVoiceCallModal(autoTriggered: true);
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Text('Failed / Overheat Persists',
+                              style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -229,16 +243,27 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: Text(num, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+            child: Text(num,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: FlutterFlowTheme.of(context).primaryText)),
+                Text(title,
+                    style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primaryText)),
                 const SizedBox(height: 2),
-                Text(desc, style: GoogleFonts.roboto(fontSize: 11, color: FlutterFlowTheme.of(context).secondaryText)),
+                Text(desc,
+                    style: GoogleFonts.roboto(
+                        fontSize: 11,
+                        color: FlutterFlowTheme.of(context).secondaryText)),
               ],
             ),
           ),
@@ -260,17 +285,23 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.support_agent_rounded, color: Color(0xFF1A237E), size: 40),
+            const Icon(Icons.support_agent_rounded,
+                color: Color(0xFF1A237E), size: 40),
             const SizedBox(height: 10),
             Text(
-              'Escalate to Senior Specialist',
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: FlutterFlowTheme.of(context).primaryText),
+              'Escalate to Cummins Senior Desk',
+              style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: FlutterFlowTheme.of(context).primaryText),
             ),
             const SizedBox(height: 6),
             Text(
-              'Direct high-priority audio connection to Cummins Level 3 Diagnostics Desk (Bangalore).',
+              'Direct high-priority audio line to Cummins Level 3 Engineering Support (Bangalore Hub).',
               textAlign: TextAlign.center,
-              style: GoogleFonts.roboto(fontSize: 12, color: FlutterFlowTheme.of(context).secondaryText),
+              style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  color: FlutterFlowTheme.of(context).secondaryText),
             ),
             const SizedBox(height: 20),
             ButtonWidget(
@@ -281,7 +312,8 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Connecting to Cummins Engineering Desk...')),
+                  const SnackBar(
+                      content: Text('Connecting to Cummins Engineering Desk...')),
                 );
               },
             ),
@@ -289,6 +321,40 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
         ),
       ),
     );
+  }
+
+  void _handleDispatchAttempt() {
+    if (!aiVoiceCallCompleted) {
+      // Barred until AI call is completed!
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF1E293B),
+          duration: const Duration(seconds: 4),
+          content: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Compulsory Pathway: AI Voice Agent Diagnostic Call required before technician dispatch.',
+                  style: GoogleFonts.roboto(fontSize: 12, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'Call AI',
+            textColor: Colors.amberAccent,
+            onPressed: () {
+              _showAIVoiceCallModal();
+            },
+          ),
+        ),
+      );
+      _showAIVoiceCallModal(autoTriggered: true);
+    } else {
+      context.goNamed('DispatchConfirmation');
+    }
   }
 
   @override
@@ -315,7 +381,8 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       child: Row(
                         children: [
                           FlutterFlowIconButton(
@@ -337,26 +404,29 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Analysis Complete',
+                                  'AI Analysis & Resolution',
                                   style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: FlutterFlowTheme.of(context).primaryText,
+                                    color: FlutterFlowTheme.of(context)
+                                        .primaryText,
                                   ),
                                 ),
                                 Row(
                                   children: [
                                     Icon(
                                       Icons.check_circle_rounded,
-                                      color: FlutterFlowTheme.of(context).success,
+                                      color:
+                                          FlutterFlowTheme.of(context).success,
                                       size: 13,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Diagnosed just now (14:33)',
+                                      'Multimodal Synthesis Complete (14:33)',
                                       style: GoogleFonts.spaceGrotesk(
                                         fontSize: 11,
-                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                        color: FlutterFlowTheme.of(context)
+                                            .secondaryText,
                                       ),
                                     ),
                                   ],
@@ -365,9 +435,10 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.phone_in_talk, color: Color(0xFF1A237E)),
-                            onPressed: _showCallbackModal,
-                            tooltip: 'Trigger AI Callback',
+                            icon: const Icon(Icons.phone_in_talk,
+                                color: Color(0xFF1A237E)),
+                            onPressed: () => _showAIVoiceCallModal(),
+                            tooltip: 'Trigger AI Voice Call',
                           ),
                         ],
                       ),
@@ -379,6 +450,31 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                   ],
                 ),
               ),
+
+              // Pathway Progress Ribbon
+              Container(
+                color: FlutterFlowTheme.of(context).primary.withOpacity(0.04),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildPathwayStep('1. Analyze', true, true),
+                    const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+                    _buildPathwayStep(
+                        '2. Safe-Fix',
+                        initialTroubleshootingAttempted,
+                        !initialTroubleshootingFailed),
+                    const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+                    _buildPathwayStep(
+                        '3. AI Call',
+                        initialTroubleshootingFailed || aiVoiceCallCompleted,
+                        aiVoiceCallCompleted),
+                    const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+                    _buildPathwayStep('4. Dispatch', aiVoiceCallCompleted, false),
+                  ],
+                ),
+              ),
+
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -437,10 +533,12 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
                       // Fault Hypotheses
                       Container(
                         decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context).secondaryBackground,
+                          color: FlutterFlowTheme.of(context)
+                              .secondaryBackground,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: FlutterFlowTheme.of(context).alternate,
@@ -459,21 +557,25 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                                   style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
-                                    color: FlutterFlowTheme.of(context).primaryText,
+                                    color: FlutterFlowTheme.of(context)
+                                        .primaryText,
                                   ),
                                 ),
                                 Container(
                                   decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context).primary5,
+                                    color:
+                                        FlutterFlowTheme.of(context).primary5,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
                                   child: Text(
                                     '3 similar cases found',
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: FlutterFlowTheme.of(context).primary,
+                                      color:
+                                          FlutterFlowTheme.of(context).primary,
                                     ),
                                   ),
                                 ),
@@ -512,10 +614,11 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    'Confidence based on visual evidence + asset history + 3 similar resolved cases',
+                                    'Confidence synthesized from OCR code ERR-704 + thermal staining + 3 historical work orders.',
                                     style: GoogleFonts.roboto(
                                       fontSize: 11,
-                                      color: FlutterFlowTheme.of(context).secondaryText,
+                                      color: FlutterFlowTheme.of(context)
+                                          .secondaryText,
                                     ),
                                   ),
                                 ),
@@ -525,6 +628,7 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                         ),
                       ),
                       const SizedBox(height: 14),
+
                       // Key Insight Alert Banner
                       Container(
                         decoration: BoxDecoration(
@@ -550,20 +654,22 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Key Insight',
+                                    'Key Predictive Insight',
                                     style: GoogleFonts.spaceGrotesk(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
-                                      color: FlutterFlowTheme.of(context).onSurface,
+                                      color:
+                                          FlutterFlowTheme.of(context).onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Last repair: hose clamp replacement by Agent Ravi, 6 months ago (Feb 2026)',
+                                    'Last repair: hose clamp replacement by Specialist Ravi Kumar, 6 months ago (Feb 2026). High likelihood of repeat bolt fatigue.',
                                     style: GoogleFonts.roboto(
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 13,
-                                      color: FlutterFlowTheme.of(context).primaryText,
+                                      fontSize: 12,
+                                      color: FlutterFlowTheme.of(context)
+                                          .primaryText,
                                     ),
                                   ),
                                 ],
@@ -572,106 +678,212 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      // Action & Callback Section
+                      const SizedBox(height: 16),
+
+                      // DYNAMIC PATHWAY ACTION CARD
                       Container(
                         decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context).secondaryBackground,
+                          color: FlutterFlowTheme.of(context)
+                              .secondaryBackground,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: FlutterFlowTheme.of(context).alternate,
-                            width: 1,
+                            color: aiVoiceCallCompleted
+                                ? const Color(0xFF10B981)
+                                : initialTroubleshootingFailed
+                                    ? const Color(0xFFEF4444)
+                                    : FlutterFlowTheme.of(context).alternate,
+                            width: (aiVoiceCallCompleted || initialTroubleshootingFailed) ? 1.5 : 1,
                           ),
                         ),
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            InkWell(
-                              onTap: _showCallbackModal,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.all(10),
+                            // State 1: Troubleshooting Failed -> Compulsory Call Notification
+                            if (initialTroubleshootingFailed && !aiVoiceCallCompleted) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: FlutterFlowTheme.of(context).success10,
+                                  color: const Color(0xFFFEF2F2),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: FlutterFlowTheme.of(context).success30),
+                                  border: Border.all(color: const Color(0xFFFCA5A5)),
                                 ),
                                 child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: FlutterFlowTheme.of(context).success,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                        Icons.phone_in_talk_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ),
+                                    const Icon(Icons.error_outline_rounded,
+                                        color: Color(0xFFDC2626), size: 20),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'AI Callback Complete',
-                                            style: GoogleFonts.roboto(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: FlutterFlowTheme.of(context).primaryText,
-                                            ),
+                                            'Initial Safe-Fix Failed • Escalation Triggered',
+                                            style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: const Color(0xFF991B1B)),
                                           ),
+                                          const SizedBox(height: 2),
                                           Text(
-                                            'Confirmed: cooling restriction. Dispatch recommended.',
+                                            'Telemetry confirms thermal runaway persists. AI Voice Agent Call is COMPULSORY before field dispatch.',
                                             style: GoogleFonts.roboto(
-                                              fontSize: 11,
-                                              color: FlutterFlowTheme.of(context).secondaryText,
-                                            ),
+                                                fontSize: 11,
+                                                color: const Color(0xFFB91C1C)),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.refresh, size: 16, color: Colors.grey),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            ButtonWidget(
-                              icon: const Icon(
-                                Icons.local_shipping_rounded,
-                                color: Colors.white,
-                                size: 20,
+                              const SizedBox(height: 14),
+                              ElevatedButton.icon(
+                                onPressed: () => _showAIVoiceCallModal(),
+                                icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 20),
+                                label: Text(
+                                  'Start Compulsory AI Voice Call',
+                                  style: GoogleFonts.spaceGrotesk(
+                                      fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: FlutterFlowTheme.of(context).primary,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
                               ),
-                              iconPresent: true,
-                              content: 'Approve Dispatch',
-                              variant: 'primary',
-                              size: 'large',
-                              fullWidth: true,
-                              onTap: () {
-                                context.goNamed('DispatchConfirmation');
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            ButtonWidget(
-                              content: 'Try Safe Fix First',
-                              variant: 'outline',
-                              size: 'medium',
-                              fullWidth: true,
-                              onTap: _showSafeFixModal,
-                            ),
-                            const SizedBox(height: 4),
-                            ButtonWidget(
-                              content: 'Escalate to Specialist',
-                              variant: 'ghost',
-                              size: 'medium',
-                              fullWidth: true,
-                              onTap: _showSpecialistModal,
+                            ]
+                            // State 2: AI Voice Call Complete
+                            else if (aiVoiceCallCompleted) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: FlutterFlowTheme.of(context).success10,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: FlutterFlowTheme.of(context).success30),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.verified_rounded,
+                                          color: Colors.white, size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'AI Voice Call Complete & Certified',
+                                            style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: const Color(0xFF065F46)),
+                                          ),
+                                          Text(
+                                            'Response: "$voiceCallAnswer" • Parts reserved in Van #4',
+                                            style: GoogleFonts.roboto(
+                                                fontSize: 11,
+                                                color: FlutterFlowTheme.of(context).secondaryText),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              ButtonWidget(
+                                icon: const Icon(
+                                  Icons.local_shipping_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                iconPresent: true,
+                                content: 'Approve & Confirm Dispatch',
+                                variant: 'primary',
+                                size: 'large',
+                                fullWidth: true,
+                                onTap: () {
+                                  context.goNamed('DispatchConfirmation');
+                                },
+                              ),
+                            ]
+                            // State 3: Initial State (Not attempted yet)
+                            else ...[
+                              Text(
+                                'Recommended Pathway Step 1',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                  color: FlutterFlowTheme.of(context).primary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Perform initial safe-fix checks. If unresolved, AI Voice Agent Call will automatically initiate.',
+                                style: GoogleFonts.roboto(
+                                  fontSize: 12,
+                                  color: FlutterFlowTheme.of(context).secondaryText,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              ButtonWidget(
+                                icon: const Icon(Icons.shield_outlined, color: Colors.white, size: 18),
+                                iconPresent: true,
+                                content: 'Try Initial Safe-Fix Troubleshooting',
+                                variant: 'primary',
+                                size: 'large',
+                                fullWidth: true,
+                                onTap: _showSafeFixModal,
+                              ),
+                              const SizedBox(height: 8),
+                              ButtonWidget(
+                                icon: const Icon(Icons.phone_in_talk_rounded, size: 16),
+                                iconPresent: true,
+                                content: 'Escalate to AI Voice Agent Call',
+                                variant: 'outline',
+                                size: 'medium',
+                                fullWidth: true,
+                                onTap: () => _showAIVoiceCallModal(),
+                              ),
+                            ],
+
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                  onTap: _showSpecialistModal,
+                                  child: Text(
+                                    'Connect to Senior Specialist',
+                                    style: GoogleFonts.spaceGrotesk(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: FlutterFlowTheme.of(context).primary),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: _handleDispatchAttempt,
+                                  child: Text(
+                                    'Direct Dispatch >',
+                                    style: GoogleFonts.spaceGrotesk(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: aiVoiceCallCompleted
+                                            ? const Color(0xFF10B981)
+                                            : FlutterFlowTheme.of(context).secondaryText),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -682,6 +894,293 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPathwayStep(String label, bool isActive, bool isComplete) {
+    Color color = isComplete
+        ? const Color(0xFF10B981)
+        : isActive
+            ? FlutterFlowTheme.of(context).primary
+            : FlutterFlowTheme.of(context).secondaryText;
+    return Row(
+      children: [
+        Icon(
+          isComplete
+              ? Icons.check_circle_rounded
+              : isActive
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_unchecked_rounded,
+          size: 13,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 10,
+            fontWeight: isActive || isComplete ? FontWeight.bold : FontWeight.w500,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// FULL INTERACTIVE COMPULSORY AI VOICE CALL DIALOG
+class _AIVoiceCallDialog extends StatefulWidget {
+  const _AIVoiceCallDialog({required this.onCallComplete});
+
+  final void Function(String selectedAnswer) onCallComplete;
+
+  @override
+  State<_AIVoiceCallDialog> createState() => _AIVoiceCallDialogState();
+}
+
+class _AIVoiceCallDialogState extends State<_AIVoiceCallDialog>
+    with SingleTickerProviderStateMixin {
+  int step = 1; // 1: Connecting, 2: AI Speaking question, 3: Answered & Synthesizing, 4: Authorized
+  String selectedAnswer = '';
+  late AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _runCallFlow();
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+
+  void _runCallFlow() async {
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (mounted) setState(() => step = 2);
+  }
+
+  void _submitAnswer(String answer) async {
+    setState(() {
+      selectedAnswer = answer;
+      step = 3;
+    });
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) setState(() => step = 4);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF0F172A),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.headset_mic_rounded,
+                          color: Colors.indigoAccent, size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ServiceOps AI Voice Agent',
+                          style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                        Text(
+                          'Compulsory Adaptive Diagnostic Call',
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10, color: Colors.indigoAccent),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFEF4444)),
+                  ),
+                  child: Text(
+                    'LIVE 00:18',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFEF4444)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Animated Waveform / Avatar
+            AnimatedBuilder(
+              animation: _waveController,
+              builder: (context, _) => Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A237E),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.indigoAccent,
+                    width: 2 + (_waveController.value * 2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.indigoAccent.withOpacity(0.3 * _waveController.value),
+                      blurRadius: 16 * _waveController.value,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.phone_in_talk_rounded,
+                    color: Colors.amberAccent, size: 28),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Speech Prompt / Dialogue Box
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI AGENT SPEECH (Multimodal Synthesizer):',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.indigoAccent),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    step == 1
+                        ? '"Connecting to Operator Arun Kumar for live escalation..."'
+                        : step == 2
+                            ? '"Hello Arun, telemetry confirms clamp tightening did not stop the thermal spike. Is coolant actively spraying under load, or is steam emerging from the expansion cap?"'
+                            : step == 3
+                                ? '"Analyzing your report: \\"$selectedAnswer\\"... Checking Freshworks parts inventory for OEM kit #HC-500..."'
+                                : '"Diagnostic Certified. Verified: Hose clamp elastomeric failure. Freshworks Kit #HC-500 reserved in Van #4. Authorizing Specialist Ravi Kumar."',
+                    style: GoogleFonts.roboto(
+                        fontSize: 12,
+                        color: Colors.white,
+                        fontStyle: FontStyle.italic,
+                        height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Interactive Options when AI asks question
+            if (step == 2) ...[
+              Text(
+                'Select Operator Observation:',
+                style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF94A3B8)),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () =>
+                    _submitAnswer('Fluid actively spraying under load'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF334155),
+                  minimumSize: const Size(double.infinity, 42),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text('1. Fluid actively spraying from lower clamp',
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+              ),
+              const SizedBox(height: 6),
+              ElevatedButton(
+                onPressed: () =>
+                    _submitAnswer('Steam and boiling in expansion reservoir'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF334155),
+                  minimumSize: const Size(double.infinity, 42),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text('2. Steam & boiling in expansion tank',
+                    style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+              ),
+            ] else if (step == 3) ...[
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.indigoAccent),
+                  ),
+                ),
+              ),
+            ] else if (step == 4) ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onCallComplete(selectedAnswer);
+                },
+                icon: const Icon(Icons.check_circle_rounded,
+                    color: Colors.white, size: 18),
+                label: Text('Authorize Field Dispatch',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  minimumSize: const Size(double.infinity, 46),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

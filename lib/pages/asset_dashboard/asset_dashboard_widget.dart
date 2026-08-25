@@ -1418,37 +1418,86 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                   ),
                 ),
                 const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Offline Telemetry Cache',
-                      style: GoogleFonts.roboto(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: FlutterFlowTheme.of(context).primaryText)),
-                  subtitle: Text('Syncs diagnostic packets when field signal is low',
-                      style: GoogleFonts.roboto(
-                          fontSize: 11,
-                          color: FlutterFlowTheme.of(context).secondaryText)),
-                  value: _offlineSyncEnabled,
-                  activeColor: FlutterFlowTheme.of(context).primary,
-                  onChanged: (val) => setState(() => _offlineSyncEnabled = val),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Offline Telemetry Cache',
+                              style: GoogleFonts.roboto(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: FlutterFlowTheme.of(context).primaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Syncs diagnostic packets when field signal is low',
+                              style: GoogleFonts.roboto(
+                                fontSize: 11,
+                                color: FlutterFlowTheme.of(context).secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: _offlineSyncEnabled,
+                        activeColor: FlutterFlowTheme.of(context).primary,
+                        onChanged: (val) => setState(() => _offlineSyncEnabled = val),
+                      ),
+                    ],
+                  ),
                 ),
-                const Divider(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.phone_in_talk_rounded,
-                      color: FlutterFlowTheme.of(context).primary),
-                  title: Text('24/7 Field Dispatch Hotline',
-                      style: GoogleFonts.roboto(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: FlutterFlowTheme.of(context).primaryText)),
-                  subtitle: Text('+91 80 2839 0000',
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 11,
-                          color: FlutterFlowTheme.of(context).primary)),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                const Divider(height: 16),
+                InkWell(
                   onTap: _showSupportModal,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: FlutterFlowTheme.of(context).primary,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '24/7 Field Dispatch Hotline',
+                                style: GoogleFonts.roboto(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: FlutterFlowTheme.of(context).primaryText,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '+91 80 2839 0000',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 11,
+                                  color: FlutterFlowTheme.of(context).primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
