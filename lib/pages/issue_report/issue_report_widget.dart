@@ -1,4 +1,5 @@
 import '/components/button/button_widget.dart';
+import '/components/in_call_agentic_troubleshooting/in_call_transcription_widget.dart';
 import '/components/step_indicator/step_indicator_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -37,6 +38,25 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  void _showInCallTroubleshootingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => InCallTranscriptionWidget(
+        initialSymptom: 'ERR-704 Coolant Overheat Tripped on Generator ABC123',
+        onCallComplete: ({
+          required bool dispatchRequired,
+          required String resolutionNotes,
+          required int finalConfidence,
+          required String resolvedBy,
+          required String rootCause,
+        }) {
+          context.goNamed('AIAnalysisResult');
+        },
+      ),
+    );
   }
 
   void _triggerAIInvestigation() {
@@ -567,11 +587,23 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
                       ),
                       const SizedBox(height: 20),
                       ButtonWidget(
-                        content: 'Analyze with AI',
+                        icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                        iconPresent: true,
+                        content: 'Analyze Evidence with AI',
                         variant: 'primary',
                         size: 'large',
                         fullWidth: true,
                         onTap: _triggerAIInvestigation,
+                      ),
+                      const SizedBox(height: 8),
+                      ButtonWidget(
+                        icon: Icon(Icons.phone_in_talk_rounded, color: FlutterFlowTheme.of(context).primary, size: 18),
+                        iconPresent: true,
+                        content: 'Start Live AI Diagnostic Call',
+                        variant: 'secondary',
+                        size: 'medium',
+                        fullWidth: true,
+                        onTap: _showInCallTroubleshootingModal,
                       ),
                       const SizedBox(height: 8),
                       Container(

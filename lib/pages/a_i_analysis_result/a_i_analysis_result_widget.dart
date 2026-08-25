@@ -1,6 +1,7 @@
 import '/components/button/button_widget.dart';
 import '/components/confidence_row/confidence_row_widget.dart';
 import '/components/evidence_card/evidence_card_widget.dart';
+import '/components/in_call_agentic_troubleshooting/in_call_transcription_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -29,6 +30,10 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
   bool initialTroubleshootingFailed = false;
   bool aiVoiceCallCompleted = false;
   String voiceCallAnswer = '';
+  int coolingConfidence = 71;
+  bool isSelfResolved = false;
+  String resolvedBy = '';
+  String certifiedRootCause = 'Cooling restriction at lower hose clamp assembly';
 
   @override
   void initState() {
@@ -47,23 +52,48 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => _AIVoiceCallDialog(
-        onCallComplete: (answer) {
+      builder: (dialogContext) => InCallTranscriptionWidget(
+        initialSymptom: 'ERR-704 Coolant Overheat Tripped on Generator ABC123',
+        onCallComplete: ({
+          required bool dispatchRequired,
+          required String resolutionNotes,
+          required int finalConfidence,
+          required String resolvedBy,
+          required String rootCause,
+        }) {
           setState(() {
             aiVoiceCallCompleted = true;
-            voiceCallAnswer = answer;
+            voiceCallAnswer = resolutionNotes;
+            coolingConfidence = finalConfidence;
+            isSelfResolved = !dispatchRequired;
+            this.resolvedBy = resolvedBy;
+            certifiedRootCause = rootCause;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: const Color(0xFF065F46),
+              backgroundColor: dispatchRequired
+                  ? const Color(0xFF1E1B4B)
+                  : const Color(0xFF065F46),
               content: Row(
                 children: [
-                  const Icon(Icons.verified_rounded, color: Colors.white, size: 18),
+                  Icon(
+                    dispatchRequired
+                        ? Icons.local_shipping_rounded
+                        : Icons.verified_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'AI Diagnostic Certification Complete. Field Dispatch Authorized!',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      dispatchRequired
+                          ? 'AI Diagnostic Certified ($finalConfidence%). Specialist Ravi Kumar Dispatched!'
+                          : 'Operator Self-Resolution Certified ($finalConfidence%). $resolvedBy logged to Freshworks!',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -582,9 +612,9 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                               ],
                             ),
                             const SizedBox(height: 14),
-                            const ConfidenceRowWidget(
+                            ConfidenceRowWidget(
                               label: 'Cooling restriction (recurring)',
-                              percent: '71',
+                              percent: '$coolingConfidence',
                               isPrimary: true,
                             ),
                             const SizedBox(height: 12),
@@ -930,259 +960,4 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
   }
 }
 
-// FULL INTERACTIVE COMPULSORY AI VOICE CALL DIALOG
-class _AIVoiceCallDialog extends StatefulWidget {
-  const _AIVoiceCallDialog({required this.onCallComplete});
 
-  final void Function(String selectedAnswer) onCallComplete;
-
-  @override
-  State<_AIVoiceCallDialog> createState() => _AIVoiceCallDialogState();
-}
-
-class _AIVoiceCallDialogState extends State<_AIVoiceCallDialog>
-    with SingleTickerProviderStateMixin {
-  int step = 1; // 1: Connecting, 2: AI Speaking question, 3: Answered & Synthesizing, 4: Authorized
-  String selectedAnswer = '';
-  late AnimationController _waveController;
-
-  @override
-  void initState() {
-    super.initState();
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _runCallFlow();
-  }
-
-  @override
-  void dispose() {
-    _waveController.dispose();
-    super.dispose();
-  }
-
-  void _runCallFlow() async {
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (mounted) setState(() => step = 2);
-  }
-
-  void _submitAnswer(String answer) async {
-    setState(() {
-      selectedAnswer = answer;
-      step = 3;
-    });
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (mounted) setState(() => step = 4);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: const Color(0xFF0F172A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.headset_mic_rounded,
-                          color: Colors.indigoAccent, size: 18),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ServiceOps AI Voice Agent',
-                          style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
-                        Text(
-                          'Compulsory Adaptive Diagnostic Call',
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 10, color: Colors.indigoAccent),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFEF4444)),
-                  ),
-                  child: Text(
-                    'LIVE 00:18',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFEF4444)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Animated Waveform / Avatar
-            AnimatedBuilder(
-              animation: _waveController,
-              builder: (context, _) => Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A237E),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.indigoAccent,
-                    width: 2 + (_waveController.value * 2),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.indigoAccent.withOpacity(0.3 * _waveController.value),
-                      blurRadius: 16 * _waveController.value,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.phone_in_talk_rounded,
-                    color: Colors.amberAccent, size: 28),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Speech Prompt / Dialogue Box
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF334155)),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'AI AGENT SPEECH (Multimodal Synthesizer):',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.indigoAccent),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    step == 1
-                        ? '"Connecting to Operator Arun Kumar for live escalation..."'
-                        : step == 2
-                            ? '"Hello Arun, telemetry confirms clamp tightening did not stop the thermal spike. Is coolant actively spraying under load, or is steam emerging from the expansion cap?"'
-                            : step == 3
-                                ? '"Analyzing your report: \\"$selectedAnswer\\"... Checking Freshworks parts inventory for OEM kit #HC-500..."'
-                                : '"Diagnostic Certified. Verified: Hose clamp elastomeric failure. Freshworks Kit #HC-500 reserved in Van #4. Authorizing Specialist Ravi Kumar."',
-                    style: GoogleFonts.roboto(
-                        fontSize: 12,
-                        color: Colors.white,
-                        fontStyle: FontStyle.italic,
-                        height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Interactive Options when AI asks question
-            if (step == 2) ...[
-              Text(
-                'Select Operator Observation:',
-                style: GoogleFonts.spaceGrotesk(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF94A3B8)),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () =>
-                    _submitAnswer('Fluid actively spraying under load'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF334155),
-                  minimumSize: const Size(double.infinity, 42),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text('1. Fluid actively spraying from lower clamp',
-                    style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-              ),
-              const SizedBox(height: 6),
-              ElevatedButton(
-                onPressed: () =>
-                    _submitAnswer('Steam and boiling in expansion reservoir'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF334155),
-                  minimumSize: const Size(double.infinity, 42),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text('2. Steam & boiling in expansion tank',
-                    style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-              ),
-            ] else if (step == 3) ...[
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.indigoAccent),
-                  ),
-                ),
-              ),
-            ] else if (step == 4) ...[
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onCallComplete(selectedAnswer);
-                },
-                icon: const Icon(Icons.check_circle_rounded,
-                    color: Colors.white, size: 18),
-                label: Text('Authorize Field Dispatch',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
-                  minimumSize: const Size(double.infinity, 46),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}

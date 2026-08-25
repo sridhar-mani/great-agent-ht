@@ -2,6 +2,8 @@ import '/components/activity_item/activity_item_widget.dart';
 import '/components/bottom_nav/bottom_nav_widget.dart';
 import '/components/bottom_nav_child/bottom_nav_child_widget.dart';
 import '/components/button/button_widget.dart';
+import '/components/history_resolution_audit/history_resolution_audit_widget.dart';
+import '/components/in_call_agentic_troubleshooting/in_call_transcription_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -161,6 +163,62 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
+  void _showInCallAgentModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => InCallTranscriptionWidget(
+        initialSymptom: 'Generator ABC123 Coolant Overheat Tripped',
+        onCallComplete: ({
+          required bool dispatchRequired,
+          required String resolutionNotes,
+          required int finalConfidence,
+          required String resolvedBy,
+          required String rootCause,
+        }) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: dispatchRequired
+                  ? const Color(0xFF1E1B4B)
+                  : const Color(0xFF065F46),
+              content: Row(
+                children: [
+                  Icon(
+                    dispatchRequired
+                        ? Icons.local_shipping_rounded
+                        : Icons.verified_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      dispatchRequired
+                          ? 'AI Diagnostic Certified ($finalConfidence%). Field Technician Ravi Kumar Dispatched!'
+                          : 'Self-Resolution Verified ($finalConfidence%). $resolvedBy logged to Freshworks!',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showResolutionAuditModal(IssueHistoryRecord record) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => HistoryResolutionAuditWidget(record: record),
+    );
+  }
+
   void _showSupportModal() {
     showModalBottomSheet(
       context: context,
@@ -184,21 +242,35 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                   color: FlutterFlowTheme.of(context).primary, size: 36),
             ),
             const SizedBox(height: 12),
-            Text('Contact Plant Support',
+            Text('Plant Support & AI Diagnostic Desk',
                 style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: FlutterFlowTheme.of(context).primaryText)),
             const SizedBox(height: 4),
-            Text('24/7 Field Dispatch & SCADA Emergency Desk',
+            Text('Autonomous AI Call Agent with Live Transcription & SCADA Sync',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.roboto(
                     fontSize: 12,
                     color: FlutterFlowTheme.of(context).secondaryText)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ButtonWidget(
-              content: 'Call Control Desk (+91 80 2839 0000)',
+              icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 18),
+              iconPresent: true,
+              content: 'Start AI In-Call Diagnostic',
               variant: 'primary',
               size: 'large',
+              fullWidth: true,
+              onTap: () {
+                Navigator.pop(context);
+                _showInCallAgentModal();
+              },
+            ),
+            const SizedBox(height: 8),
+            ButtonWidget(
+              content: 'Call Manual Control Desk (+91 80 2839 0000)',
+              variant: 'outline',
+              size: 'medium',
               fullWidth: true,
               onTap: () => Navigator.pop(context),
             ),
@@ -986,8 +1058,251 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
+  // LIST OF ENRICHED HISTORICAL SERVICE & AUDIT RECORDS
+  List<IssueHistoryRecord> get _historyRecords => const [
+        IssueHistoryRecord(
+          ticketId: 'TICK-8842',
+          title: 'Hose Clamp Replacement & Torque Spec',
+          assetId: 'ABC123',
+          date: 'Feb 04, 2026',
+          category: 'Repairs',
+          symptom: 'ERR-704 Coolant Overheat (98°C spike after 10m under 80% load)',
+          rootCause:
+              'Elastomeric fatigue at lower radiator hose clamp junction caused by cyclic engine vibration at 1500 RPM.',
+          resolvedBy: 'Ravi Kumar',
+          resolverRole: 'Field Technician',
+          resolverAvatarText: 'RK',
+          roleColor: Color(0xFFD97706),
+          roleIcon: Icons.build_rounded,
+          resolutionSteps: [
+            'Isolated engine thermal jacket & verified block temp cooled to <60°C.',
+            'Replaced OEM Kit #HC-500 (silicone elastomeric seal + 316-SS constant-tension band).',
+            'Torqued clamp bolt to exact 28 Nm spec with digital calibrated driver.',
+            'Replenished 5.0L Fleetguard Ethylene Glycol premix.',
+            'Executed 15-min 100% load test (500 kW); verified temp stabilized at 84°C without leakage.',
+          ],
+          partsUsed: ['OEM Clamp Kit #HC-500', 'Coolant Premix 5.0L'],
+          mttrDuration: '38 mins',
+          finalTelemetryVerification:
+              'Coolant temp steady 84°C at 500 kW load, expansion pressure 1.05 bar.',
+          totalCompanyDataContribution: 88,
+          freshworksContribution: 38,
+          oemManualContribution: 28,
+          aiReasoningContribution: 22,
+          humanOperatorContribution: 12,
+          citations: [
+            CompanyDataSourceCitation(
+              sourceName: 'Freshworks MCP Ticket History',
+              documentReference: 'TICK-7201 & TICK-7550',
+              insightProvided:
+                  'Matched 2 prior thermal alert tickets in Q3 2025; cited Tech Ravi\'s previous clamp inspection note.',
+              icon: Icons.history_edu_rounded,
+            ),
+            CompanyDataSourceCitation(
+              sourceName: 'Cummins QSK19 OEM Manual',
+              documentReference: 'Section §4.2 Cooling Circuit',
+              insightProvided:
+                  'Provided exact 28 Nm torque rating and silicone elastomeric clamp part ID #HC-500.',
+              icon: Icons.menu_book_rounded,
+            ),
+            CompanyDataSourceCitation(
+              sourceName: 'Multimodal AI Vision Reasoner',
+              documentReference: 'Neural Vision Packet v3.2',
+              insightProvided:
+                  'Detected fluid seepage pattern at bottom fitting; computed 89% cooling restriction probability.',
+              icon: Icons.auto_awesome_rounded,
+            ),
+          ],
+        ),
+        IssueHistoryRecord(
+          ticketId: 'TICK-8719',
+          title: 'Manifold Air Lock Bleed & Thermal Recovery',
+          assetId: 'ABC123',
+          date: 'Jan 22, 2026',
+          category: 'Repairs',
+          symptom:
+              'Rapid temperature ascent to 95°C without visible external fluid loss',
+          rootCause:
+              'Entrapped air pocket in upper radiator manifold after routine coolant topping, causing thermal stagnation.',
+          resolvedBy: 'Arun Kumar',
+          resolverRole: 'Customer Self-Resolved',
+          resolverAvatarText: 'AK',
+          roleColor: Color(0xFF10B981),
+          roleIcon: Icons.verified_user_rounded,
+          resolutionSteps: [
+            'Operator initiated AI voice troubleshooting call with Apex-7 agent.',
+            'AI guided operator to isolate engine to 900 RPM idle speed.',
+            'Loosened brass bleeder valve #BV-2 on upper radiator manifold by 1/4 turn.',
+            'Purged compressed air pocket until bubble-free coolant stream emerged.',
+            'Re-torqued bleeder screw to 12 Nm; verified engine temperature dropped back to 82°C.',
+          ],
+          partsUsed: ['Self-Executed (No Parts Replaced)'],
+          mttrDuration: '14 mins',
+          finalTelemetryVerification:
+              'Temperature dropped from 95°C to 82°C; SCADA flow rate 120 L/min.',
+          totalCompanyDataContribution: 92,
+          freshworksContribution: 30,
+          oemManualContribution: 35,
+          aiReasoningContribution: 27,
+          humanOperatorContribution: 8,
+          citations: [
+            CompanyDataSourceCitation(
+              sourceName: 'Cummins Standard Operating Procedure',
+              documentReference: 'SOP-114 Manifold Air Bleed',
+              insightProvided:
+                  'Step-by-step non-invasive air purge sequence for QSK19 industrial generators.',
+              icon: Icons.menu_book_rounded,
+            ),
+            CompanyDataSourceCitation(
+              sourceName: 'Freshworks Live Telemetry Sync',
+              documentReference: 'SCADA Telemetry ABC123',
+              insightProvided:
+                  'Real-time flow sensor validation confirming coolant circulation recovery.',
+              icon: Icons.speed_rounded,
+            ),
+          ],
+        ),
+        IssueHistoryRecord(
+          ticketId: 'TICK-8604',
+          title: '500-Hour Scheduled Interval Service & Lube Oil Renewal',
+          assetId: 'ABC123',
+          date: 'Jan 15, 2026',
+          category: 'Routine',
+          symptom: '500-Hour Scheduled Maintenance Interval Reached',
+          rootCause: 'Standard preventive maintenance lifecycle compliance.',
+          resolvedBy: 'Suresh Patel',
+          resolverRole: 'Plant Manager',
+          resolverAvatarText: 'SP',
+          roleColor: Color(0xFF3B82F6),
+          roleIcon: Icons.manage_accounts_rounded,
+          resolutionSteps: [
+            'Approved work permit & SCADA offline maintenance mode for Bay 4.',
+            'Drained 35L 15W-40 Valvoline Premium Blue heavy-duty engine oil.',
+            'Replaced primary & secondary spin-on fuel filters (#FF-5776).',
+            'Executed battery impedance and starter load testing (100% capacity).',
+            'Authorized work completion and signed off in Freshworks Enterprise Service Desk.',
+          ],
+          partsUsed: [
+            '15W-40 Engine Oil (35L)',
+            'Fleetguard Fuel Filters #FF-5776 (x2)'
+          ],
+          mttrDuration: '1 hr 20 mins',
+          finalTelemetryVerification:
+              'Oil pressure 4.2 bar at 1500 RPM; Cranking voltage 24.8V.',
+          totalCompanyDataContribution: 84,
+          freshworksContribution: 45,
+          oemManualContribution: 25,
+          aiReasoningContribution: 15,
+          humanOperatorContribution: 15,
+          citations: [
+            CompanyDataSourceCitation(
+              sourceName: 'Freshworks Enterprise Service Desk',
+              documentReference: 'Work Order #WO-9932',
+              insightProvided:
+                  'Automated preventive maintenance schedule generated from SCADA hour-meter tracking.',
+              icon: Icons.assignment_turned_in_rounded,
+            ),
+          ],
+        ),
+        IssueHistoryRecord(
+          ticketId: 'TICK-8490',
+          title: 'Tri-Axial Vibration Audit & Foundation Damping',
+          assetId: 'ABC123',
+          date: 'Dec 20, 2025',
+          category: 'Inspections',
+          symptom: 'Quarterly predictive acoustic & vibration baseline test',
+          rootCause: 'Minor harmonic resonance on Mount #3 isolator pad.',
+          resolvedBy: 'Ravi Kumar',
+          resolverRole: 'Field Technician',
+          resolverAvatarText: 'RK',
+          roleColor: Color(0xFFD97706),
+          roleIcon: Icons.analytics_rounded,
+          resolutionSteps: [
+            'Attached tri-axial piezoelectric accelerometers to block and stator.',
+            'Recorded FFT vibration spectrum at 0%, 50%, and 100% load steps.',
+            'Detected 42 Hz harmonic on Mount #3; tightened isolator anchor bolt to 110 Nm.',
+            'Verified post-fix vibration level 1.1 mm/s RMS (ISO 10816-3 compliant).',
+          ],
+          partsUsed: ['Anti-Vibration Shim Pad #AV-30'],
+          mttrDuration: '50 mins',
+          finalTelemetryVerification:
+              'Vibration reduced to 1.1 mm/s RMS across all 3 axes.',
+          totalCompanyDataContribution: 90,
+          freshworksContribution: 35,
+          oemManualContribution: 30,
+          aiReasoningContribution: 25,
+          humanOperatorContribution: 10,
+          citations: [
+            CompanyDataSourceCitation(
+              sourceName: 'ISO Standard Repository',
+              documentReference: 'ISO 10816-3 Class II',
+              insightProvided:
+                  'Allowable vibration envelope thresholds for rigid foundation generators.',
+              icon: Icons.verified_rounded,
+            ),
+          ],
+        ),
+        IssueHistoryRecord(
+          ticketId: 'TICK-8320',
+          title: 'Alternator V-Belt Tension Calibration',
+          assetId: 'ABC123',
+          date: 'Sept 12, 2025',
+          category: 'Repairs',
+          symptom: 'Auxiliary battery charge voltage dipping below 25.2V at full load',
+          rootCause:
+              'Alternator drive V-belt stretch (12mm deflection) after 1,200 operating hours.',
+          resolvedBy: 'Arun Kumar',
+          resolverRole: 'Customer Self-Resolved',
+          resolverAvatarText: 'AK',
+          roleColor: Color(0xFF10B981),
+          roleIcon: Icons.settings_suggest_rounded,
+          resolutionSteps: [
+            'De-energized generator and locked out master breaker.',
+            'Adjusted alternator tensioner bracket bolt to achieve 6mm deflection under 45N pressure.',
+            'Cleaned pulley grooves and inspected belt teeth for micro-cracks.',
+            'Restarted engine under load; verified charging voltage 27.6V DC.',
+          ],
+          partsUsed: ['Tension Recalibration (No Parts)'],
+          mttrDuration: '22 mins',
+          finalTelemetryVerification:
+              'Alternator charge rate steady 27.6V DC under 500 kW load.',
+          totalCompanyDataContribution: 86,
+          freshworksContribution: 32,
+          oemManualContribution: 38,
+          aiReasoningContribution: 20,
+          humanOperatorContribution: 10,
+          citations: [
+            CompanyDataSourceCitation(
+              sourceName: 'Cummins QSK19 Service Manual',
+              documentReference: 'Section §8.3 Belt Tension Specs',
+              insightProvided:
+                  'Exact deflection rating (6mm under 45N force) for dual V-belt alternator pulley.',
+              icon: Icons.menu_book_rounded,
+            ),
+          ],
+        ),
+      ];
+
   // TAB 2: HISTORY / SERVICE LOG VIEW
   Widget _buildHistoryView() {
+    // Filter records based on selected filter
+    final records = _historyRecords.where((r) {
+      if (_selectedHistoryFilter == 'All') return true;
+      if (_selectedHistoryFilter == 'Field Tech') {
+        return r.resolverRole == 'Field Technician';
+      }
+      if (_selectedHistoryFilter == 'Manager') {
+        return r.resolverRole == 'Plant Manager';
+      }
+      if (_selectedHistoryFilter == 'Self-Resolved') {
+        return r.resolverRole == 'Customer Self-Resolved';
+      }
+      if (_selectedHistoryFilter == 'Routine') {
+        return r.category == 'Routine';
+      }
+      return true;
+    }).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -1001,7 +1316,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Maintenance & Audit Logs',
+                    'Maintenance & Resolution History',
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -1009,7 +1324,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                     ),
                   ),
                   Text(
-                    'Full Service Records • Generator ABC123',
+                    'Attribution by Role & Company Knowledge Contribution',
                     style: GoogleFonts.roboto(
                       fontSize: 12,
                       color: FlutterFlowTheme.of(context).secondaryText,
@@ -1018,7 +1333,14 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                 ],
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Exported Full Resolution Dossier (PDF & Freshworks Sync).'),
+                      backgroundColor: Color(0xFF1E293B),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.file_download_outlined),
                 tooltip: 'Export Log',
               ),
@@ -1026,105 +1348,212 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
           ),
           const SizedBox(height: 16),
 
-          // History Stats
-          Row(
-            children: [
-              Expanded(
-                  child: _buildFleetStatCard(
-                      'TOTAL LOGS', '12 Done', const Color(0xFF10B981))),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: _buildFleetStatCard(
-                      'SLA MET', '100%', const Color(0xFF3B82F6))),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: _buildFleetStatCard(
-                      'AVG MTTR', '42 mins', const Color(0xFF8B5CF6))),
-            ],
-          ),
+          // Fleet Knowledge Attribution Summary Card
+          _buildKnowledgeOverviewCard(),
           const SizedBox(height: 16),
 
-          // Filter Tabs
+          // Role Filter Tabs
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildHistoryFilterPill('All'),
+                _buildHistoryFilterPill('All (${_historyRecords.length})'),
                 const SizedBox(width: 8),
-                _buildHistoryFilterPill('Repairs'),
+                _buildHistoryFilterPill('Field Tech (2)'),
                 const SizedBox(width: 8),
-                _buildHistoryFilterPill('Routine'),
+                _buildHistoryFilterPill('Manager (1)'),
                 const SizedBox(width: 8),
-                _buildHistoryFilterPill('Inspections'),
+                _buildHistoryFilterPill('Self-Resolved (2)'),
+                const SizedBox(width: 8),
+                _buildHistoryFilterPill('Routine (1)'),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // Chronological Timeline Cards
-          _buildTimelineCard(
-            date: 'Feb 04, 2026',
-            title: 'Hose Clamp Repair',
-            tech: 'Ravi Kumar • L3 Specialist',
-            details:
-                'Fluid leak resolved at lower coolant clamp. Replaced OEM Kit #HC-500. Torque verified to 28Nm.',
-            badge: 'Resolved',
-            badgeColor: Colors.amber.shade700,
-            icon: Icons.build_rounded,
+          // Chronological Resolution Timeline Cards
+          ...records.map((record) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildEnrichedTimelineCard(record),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // FLEET KNOWLEDGE ATTRIBUTION OVERVIEW CARD
+  Widget _buildKnowledgeOverviewCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.hub_rounded, color: Colors.cyanAccent, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'COMPANY DATA & AI ASSIST METRICS',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: Colors.cyanAccent,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '88% AVG DATA ASSIST',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF34D399),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          _buildTimelineCard(
-            date: 'Jan 15, 2026',
-            title: 'Routine Scheduled Maintenance',
-            tech: 'Suresh M • Field Engineer',
-            details:
-                '15W-40 oil replenishment (35L), secondary fuel filter replacement, battery load test passed.',
-            badge: 'Completed',
-            badgeColor: Colors.green,
-            icon: Icons.check_circle_rounded,
+
+          // 3-Column Metrics
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('TOTAL LOGS',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 9, color: const Color(0xFF94A3B8))),
+                    const SizedBox(height: 2),
+                    Text('12 Resolved',
+                        style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('FIRST-TIME FIX',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 9, color: const Color(0xFF94A3B8))),
+                    const SizedBox(height: 2),
+                    Text('94% FTFR',
+                        style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF60A5FA))),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('AVG MTTR',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 9, color: const Color(0xFF94A3B8))),
+                    const SizedBox(height: 2),
+                    Text('38 mins',
+                        style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFA78BFA))),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          _buildTimelineCard(
-            date: 'Dec 20, 2025',
-            title: 'Quarterly Vibration Analysis',
-            tech: 'Automated SCADA Diagnostics',
-            details:
-                'Tri-axial vibration profile 1.1 mm/s RMS (compliant with ISO 10816-3 Class II).',
-            badge: 'Audit Passed',
-            badgeColor: Colors.blue,
-            icon: Icons.analytics_rounded,
+
+          // Progress Bar Breakdown
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: SizedBox(
+              height: 8,
+              child: Row(
+                children: [
+                  Expanded(flex: 38, child: Container(color: const Color(0xFF3B82F6))),
+                  Expanded(flex: 30, child: Container(color: const Color(0xFF8B5CF6))),
+                  Expanded(flex: 22, child: Container(color: const Color(0xFF10B981))),
+                  Expanded(flex: 10, child: Container(color: const Color(0xFFF59E0B))),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
-          _buildTimelineCard(
-            date: 'Sept 12, 2025',
-            title: 'Alternator Belt Replacement',
-            tech: 'Ravi Kumar • L3 Specialist',
-            details:
-                'V-belt tension calibration after 1,200 operating hours. Load bank stress test executed 500kW.',
-            badge: 'Completed',
-            badgeColor: Colors.green,
-            icon: Icons.settings_rounded,
-          ),
-          const SizedBox(height: 12),
-          _buildTimelineCard(
-            date: 'Mar 10, 2022',
-            title: 'Commissioning & Installation',
-            tech: 'Cummins India Field Service',
-            details:
-                'Factory acceptance commissioning at Peenya Stage 2 Industrial Facility Bay 4.',
-            badge: 'Installed',
-            badgeColor: Colors.purple,
-            icon: Icons.verified_rounded,
+          const SizedBox(height: 8),
+
+          // Source Legend
+          Wrap(
+            spacing: 10,
+            runSpacing: 4,
+            children: [
+              _buildLegendPill('Freshworks (38%)', const Color(0xFF3B82F6)),
+              _buildLegendPill('OEM Specs (30%)', const Color(0xFF8B5CF6)),
+              _buildLegendPill('AI Vision/Diag (22%)', const Color(0xFF10B981)),
+              _buildLegendPill('Physical Action (10%)', const Color(0xFFF59E0B)),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildLegendPill(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 9,
+            color: const Color(0xFFCBD5E1),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHistoryFilterPill(String filter) {
-    bool isSelected = _selectedHistoryFilter == filter;
+    // Match base string for active state
+    String filterKey = filter.split(' ').first;
+    bool isSelected = _selectedHistoryFilter == filterKey;
+
     return InkWell(
-      onTap: () => setState(() => _selectedHistoryFilter = filter),
+      onTap: () => setState(() => _selectedHistoryFilter = filterKey),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -1153,104 +1582,201 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
-  Widget _buildTimelineCard({
-    required String date,
-    required String title,
-    required String tech,
-    required String details,
-    required String badge,
-    required Color badgeColor,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: FlutterFlowTheme.of(context).alternate),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: badgeColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, color: badgeColor, size: 16),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: FlutterFlowTheme.of(context).primaryText,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            details,
-            style: GoogleFonts.roboto(
-              fontSize: 12,
-              color: FlutterFlowTheme.of(context).primaryText,
+  // ENRICHED RESOLUTION TIMELINE CARD (CLICKABLE TO OPEN AUDIT MODAL)
+  Widget _buildEnrichedTimelineCard(IssueHistoryRecord record) {
+    return InkWell(
+      onTap: () => _showResolutionAuditModal(record),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: FlutterFlowTheme.of(context).secondaryBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: FlutterFlowTheme.of(context).alternate),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Ticket ID & Role Badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: record.roleColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(record.roleIcon, color: record.roleColor, size: 16),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      record.ticketId,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '• ${record.date}',
+                      style: GoogleFonts.roboto(
+                        fontSize: 11,
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: record.roleColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    record.resolverRole.toUpperCase(),
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: record.roleColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Title
+            Text(
+              record.title,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Symptom & Root Cause
+            Text(
+              'Cause: ${record.rootCause}',
+              style: GoogleFonts.roboto(
+                fontSize: 11,
+                color: FlutterFlowTheme.of(context).secondaryText,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+
+            // Company Data & AI Contribution Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: FlutterFlowTheme.of(context).primaryBackground,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: FlutterFlowTheme.of(context).alternate),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.person_outline_rounded,
-                      size: 13,
-                      color: FlutterFlowTheme.of(context).secondaryText),
-                  const SizedBox(width: 4),
-                  Text(
-                    tech,
-                    style: GoogleFonts.roboto(
-                      fontSize: 11,
-                      color: FlutterFlowTheme.of(context).secondaryText,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome_rounded,
+                              size: 13,
+                              color: FlutterFlowTheme.of(context).primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Company Data & AI Input:',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: FlutterFlowTheme.of(context).primaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${record.totalCompanyDataContribution}% Assisted',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF059669),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: record.totalCompanyDataContribution / 100.0,
+                      minHeight: 5,
+                      backgroundColor: FlutterFlowTheme.of(context).alternate,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        record.totalCompanyDataContribution > 85
+                            ? const Color(0xFF10B981)
+                            : FlutterFlowTheme.of(context).primary,
+                      ),
                     ),
                   ),
                 ],
               ),
-              Text(
-                date,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: FlutterFlowTheme.of(context).primary,
+            ),
+            const SizedBox(height: 10),
+
+            // Bottom Info: Solved By Person & Tap for Audit
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline_rounded,
+                        size: 13, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Solved by: ${record.resolvedBy}',
+                      style: GoogleFonts.roboto(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+                Row(
+                  children: [
+                    Text(
+                      'Audit Dossier',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primary,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        size: 10, color: FlutterFlowTheme.of(context).primary),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
