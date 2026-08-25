@@ -126,7 +126,7 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.slate),
+                      side: const BorderSide(color: Color(0xFF64748B)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

@@ -7,7 +7,14 @@ import 'bottom_nav_child_model.dart';
 export 'bottom_nav_child_model.dart';
 
 class BottomNavChildWidget extends StatefulWidget {
-  const BottomNavChildWidget({super.key});
+  const BottomNavChildWidget({
+    super.key,
+    this.currentIndex = 0,
+    this.onTap,
+  });
+
+  final int currentIndex;
+  final void Function(int index)? onTap;
 
   @override
   State<BottomNavChildWidget> createState() => _BottomNavChildWidgetState();
@@ -15,7 +22,6 @@ class BottomNavChildWidget extends StatefulWidget {
 
 class _BottomNavChildWidgetState extends State<BottomNavChildWidget> {
   late BottomNavChildModel _model;
-  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -32,13 +38,12 @@ class _BottomNavChildWidgetState extends State<BottomNavChildWidget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
       child: Row(
         mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(0, Icons.home_rounded, 'Home'),
-          _buildNavItem(1, Icons.memory_rounded, 'Assets'),
+          _buildNavItem(1, Icons.precision_manufacturing_rounded, 'Assets'),
           _buildNavItem(2, Icons.history_rounded, 'History'),
           _buildNavItem(3, Icons.person_rounded, 'Profile'),
         ],
@@ -47,29 +52,56 @@ class _BottomNavChildWidgetState extends State<BottomNavChildWidget> {
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
-    bool isSelected = _selectedIndex == index;
-    Color color = isSelected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText;
+    bool isSelected = widget.currentIndex == index;
+    Color activeColor = FlutterFlowTheme.of(context).primary;
+    Color inactiveColor = FlutterFlowTheme.of(context).secondaryText;
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          widget.onTap?.call(index);
+        },
+        behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: color,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              height: 3,
+              width: isSelected ? 22 : 0,
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                color: activeColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? activeColor.withOpacity(0.08) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected ? activeColor : inactiveColor,
+                    size: 22,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? activeColor : inactiveColor,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

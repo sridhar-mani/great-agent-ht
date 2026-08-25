@@ -715,14 +715,14 @@ class _AIInvestigationDialogState extends State<_AIInvestigationDialog> {
             child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.indigoAccent)),
           )
         else
-          Icon(Icons.circle_outlined, color: Colors.slate.shade600, size: 16),
+          const Icon(Icons.circle_outlined, color: Color(0xFF475569), size: 16),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             label,
             style: GoogleFonts.roboto(
               fontSize: 11,
-              color: isDone || isCurrent ? Colors.white : Colors.slate.shade500,
+              color: isDone || isCurrent ? Colors.white : const Color(0xFF64748B),
               fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
             ),
           ),

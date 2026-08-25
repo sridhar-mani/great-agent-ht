@@ -614,7 +614,7 @@ class _DispatchConfirmationWidgetState
                                       ),
                                       Text(
                                         'Via Outer Ring Rd',
-                                        style: GoogleFonts.roboto(color: Colors.emeraldAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                        style: GoogleFonts.roboto(color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
@@ -643,6 +643,18 @@ class _DispatchConfirmationWidgetState
                         size: 'medium',
                         fullWidth: true,
                         onTap: _showCallTechModal,
+                      ),
+                      const SizedBox(height: 8),
+                      ButtonWidget(
+                        icon: Icon(Icons.home_rounded, color: FlutterFlowTheme.of(context).primaryText, size: 18),
+                        iconPresent: true,
+                        content: 'Return to Dashboard',
+                        variant: 'ghost',
+                        size: 'medium',
+                        fullWidth: true,
+                        onTap: () {
+                          context.goNamed('AssetDashboard');
+                        },
                       ),
                     ],
                   ),
