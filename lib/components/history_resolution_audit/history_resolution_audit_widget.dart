@@ -38,6 +38,11 @@ class IssueHistoryRecord {
 
   final List<CompanyDataSourceCitation> citations;
 
+  // Post-Call Dual Factor Feedback
+  final double? aiAgentRating;
+  final double? specialistRating;
+  final String? feedbackRemarks;
+
   const IssueHistoryRecord({
     required this.ticketId,
     required this.title,
@@ -61,6 +66,9 @@ class IssueHistoryRecord {
     required this.aiReasoningContribution,
     required this.humanOperatorContribution,
     required this.citations,
+    this.aiAgentRating = 5.0,
+    this.specialistRating = 4.9,
+    this.feedbackRemarks = 'Fast root cause isolation and rapid OEM parts dispatch verified.',
   });
 }
 
@@ -330,9 +338,9 @@ class _HistoryResolutionAuditWidgetState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1B4B),
+              color: const Color(0xFFEEF2FF),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF4338CA)),
+              border: Border.all(color: const Color(0xFFC7D2FE)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -342,7 +350,7 @@ class _HistoryResolutionAuditWidgetState
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFA5B4FC),
+                    color: const Color(0xFF4338CA),
                   ),
                 ),
                 Text(
@@ -350,7 +358,7 @@ class _HistoryResolutionAuditWidgetState
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 8,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white70,
+                    color: const Color(0xFF6366F1),
                   ),
                 ),
               ],
@@ -603,6 +611,155 @@ class _HistoryResolutionAuditWidgetState
             ],
           ),
         ),
+
+        if (record.aiAgentRating != null || record.specialistRating != null) ...[
+          const SizedBox(height: 12),
+          // Post-Call Dual-Factor Feedback Summary
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded,
+                            color: Color(0xFFF59E0B), size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'POST-RESOLUTION DUAL CSAT AUDIT',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Freshworks Verified',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF059669),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (record.aiAgentRating != null)
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Apex-7 AI Agent',
+                                style: GoogleFonts.roboto(
+                                  fontSize: 10,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star_rounded,
+                                      size: 14, color: Color(0xFFF59E0B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${record.aiAgentRating!.toStringAsFixed(1)} / 5.0',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    if (record.specialistRating != null)
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${record.resolvedBy} (Tech)',
+                                style: GoogleFonts.roboto(
+                                  fontSize: 10,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star_rounded,
+                                      size: 14, color: Color(0xFFF59E0B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${record.specialistRating!.toStringAsFixed(1)} / 5.0',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (record.feedbackRemarks != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Operator Remarks: "${record.feedbackRemarks}"',
+                    style: GoogleFonts.roboto(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: const Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

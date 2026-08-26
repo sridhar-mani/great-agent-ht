@@ -52,7 +52,11 @@ class _AIAnalysisResultWidgetState extends State<AIAnalysisResultWidget> {
     showDialog(
       context: context,
       barrierDismissible: false,
+      useSafeArea: false,
       builder: (dialogContext) => InCallTranscriptionWidget(
+        assetId: 'ABC123',
+        assetName: 'Generator Unit #1 (ABC123)',
+        specialistName: 'Ravi Kumar (Field Specialist)',
         initialSymptom: 'ERR-704 Coolant Overheat Tripped on Generator ABC123',
         onCallComplete: ({
           required bool dispatchRequired,

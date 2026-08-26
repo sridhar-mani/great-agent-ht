@@ -4,6 +4,7 @@ import '/components/bottom_nav_child/bottom_nav_child_widget.dart';
 import '/components/button/button_widget.dart';
 import '/components/history_resolution_audit/history_resolution_audit_widget.dart';
 import '/components/in_call_agentic_troubleshooting/in_call_transcription_widget.dart';
+import '/data/plant_asset_data.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -33,6 +34,22 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
   String _selectedHistoryFilter = 'All';
   bool _offlineSyncEnabled = true;
   String _selectedAssetId = 'ABC123';
+  bool _isPreRequisitioned = false;
+  bool _isAppointmentDismissed = false;
+  String _scheduledDate = 'Aug 28, 2026';
+  String _scheduledTime = '10:30 AM';
+
+  // Multi-product and multi-instance fleet state
+  List<PlantAsset> _fleetAssets = PlantAssetRepository.getInitialFleet();
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  PlantAsset get _activeAsset {
+    return _fleetAssets.firstWhere(
+      (a) => a.id == _selectedAssetId,
+      orElse: () => _fleetAssets.first,
+    );
+  }
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -52,6 +69,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
 
   @override
   void dispose() {
+    _searchController.dispose();
     _pulseController.dispose();
     _model.dispose();
     super.dispose();
@@ -103,6 +121,90 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
               ],
             ),
             const SizedBox(height: 16),
+            // High Priority Predictive Maintenance Notification (10 Days to Failure)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7F1D1D).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.warning_amber_rounded,
+                        color: Color(0xFFF87171), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'PREDICTIVE: 10 Days to Failure',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFCA5A5),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'ACTION DUE',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Generator ABC123: Lower Hose (HC-500) predicted wear limit reached in 10 days. Pre-requisition advised.',
+                          style: GoogleFonts.roboto(
+                            fontSize: 11,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showPredictiveMaintenanceModal();
+                          },
+                          child: Text(
+                            'View Lifecycle Forecast & Requisition →',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF60A5FA),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             _buildNotificationItem('Just now', 'Coolant Temp Warning',
                 'Generator ABC123 reported 98°C spike during load peak', Colors.red),
             const Divider(height: 16),
@@ -163,12 +265,383 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
+  // PREDICTIVE MAINTENANCE & COMPONENT LIFECYCLE MODAL
+  void _showPredictiveMaintenanceModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: const Color(0xFF1E293B)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Modal Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.indigoAccent.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.auto_awesome,
+                          color: Colors.cyanAccent, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AI Predictive Maintenance Core',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Cummins QSK19 Lifecycle Tracker • ABC123',
+                          style: GoogleFonts.roboto(
+                            fontSize: 11,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Summary Card
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.psychology_rounded,
+                      color: Colors.cyanAccent, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI analyzed 4,850 runtime hours, thermal cycles, and historical service tickets. 1 component requires replacement in 10 days.',
+                      style: GoogleFonts.roboto(
+                        fontSize: 11,
+                        color: const Color(0xFFCBD5E1),
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Component Lifecycle List
+            Expanded(
+              child: ListView(
+                children: [
+                  // 1. Lower Radiator Silicone Hose & Clamp (High Alert: 10 Days)
+                  _buildComponentLifecycleCard(
+                    title: 'Lower Radiator Hose & Clamp',
+                    partNumber: 'OEM Kit #HC-500',
+                    daysRemaining: 10,
+                    remainingLifePercent: 18,
+                    lastReplaced: 'Feb 04, 2026 (18 mos ago)',
+                    technician: 'Tech Ravi Kumar',
+                    status: 'Critical Alert',
+                    statusColor: const Color(0xFFEF4444),
+                    insight:
+                        'Thermal fatigue & micro-elasticity degradation detected at 80% peak engine load. Replace within 10 days to prevent road trip.',
+                    actionLabel: 'Pre-Requisition OEM Kit #HC-500',
+                    onAction: () {
+                      Navigator.pop(context);
+                      setState(() {
+                        _isPreRequisitioned = true;
+                        _isAppointmentDismissed = false;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Color(0xFF065F46),
+                          duration: Duration(seconds: 3),
+                          content: Row(
+                            children: [
+                              Icon(Icons.verified_rounded,
+                                  color: Colors.white, size: 18),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '✅ Pre-requisitioned OEM Kit #HC-500! Preventive appointment scheduled for Aug 28 with Tech Ravi Kumar.',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 2. Primary Fuel Filter & Water Separator (28 Days)
+                  _buildComponentLifecycleCard(
+                    title: 'Primary Fuel Filter & Water Separator',
+                    partNumber: 'OEM #FF-200',
+                    daysRemaining: 28,
+                    remainingLifePercent: 42,
+                    lastReplaced: 'Nov 10, 2025 (9 mos ago)',
+                    technician: 'Tech Suresh M.',
+                    status: 'Nominal Wear',
+                    statusColor: const Color(0xFFFBBF24),
+                    insight:
+                        'Differential pressure nominal at 0.18 bar. Filter particulate loading is at 58% capacity.',
+                    actionLabel: 'Add to Next Scheduled Service',
+                    onAction: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Color(0xFF1E1B4B),
+                          content: Text(
+                            'Added OEM #FF-200 to 30-Day Preventive Service Checklist.',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 3. Alternator Serpentine Drive Belt (65 Days)
+                  _buildComponentLifecycleCard(
+                    title: 'Alternator Serpentine Drive Belt',
+                    partNumber: 'OEM #AB-90',
+                    daysRemaining: 65,
+                    remainingLifePercent: 74,
+                    lastReplaced: 'Sept 12, 2025 (11 mos ago)',
+                    technician: 'Tech Ravi Kumar',
+                    status: 'Good Health',
+                    statusColor: const Color(0xFF10B981),
+                    insight:
+                        'Rib deflection is 1.1mm (Tolerance <3.0mm). Belt tension holding steady at 520 N.',
+                    actionLabel: 'View Sensor Logs',
+                    onAction: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 4. Valve Cover Gasket Set (110 Days)
+                  _buildComponentLifecycleCard(
+                    title: 'Valve Cover Gasket Set',
+                    partNumber: 'OEM #VG-31',
+                    daysRemaining: 110,
+                    remainingLifePercent: 91,
+                    lastReplaced: 'Jan 15, 2026 (7 mos ago)',
+                    technician: 'Tech Anita S.',
+                    status: 'Optimal',
+                    statusColor: const Color(0xFF10B981),
+                    insight:
+                        'Hermetic seal verified. Zero micro-seepage detected in crankcase breather telemetry.',
+                    actionLabel: 'View Audit Certificate',
+                    onAction: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComponentLifecycleCard({
+    required String title,
+    required String partNumber,
+    required int daysRemaining,
+    required int remainingLifePercent,
+    required String lastReplaced,
+    required String technician,
+    required String status,
+    required Color statusColor,
+    required String insight,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF131E33),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: daysRemaining <= 10
+              ? const Color(0xFFEF4444)
+              : const Color(0xFF1E293B),
+          width: daysRemaining <= 10 ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      '$partNumber • Replaced: $lastReplaced',
+                      style: GoogleFonts.roboto(
+                        fontSize: 10,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: statusColor.withOpacity(0.5)),
+                ),
+                child: Text(
+                  daysRemaining <= 10
+                      ? 'FAIL IN $daysRemaining DAYS'
+                      : '$daysRemaining DAYS DUE',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Health Progress Bar
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: remainingLifePercent / 100.0,
+                    minHeight: 6,
+                    backgroundColor: const Color(0xFF1E293B),
+                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '$remainingLifePercent% Life',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // AI Insight
+          Text(
+            insight,
+            style: GoogleFonts.roboto(
+              fontSize: 11,
+              color: const Color(0xFFCBD5E1),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Action Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onAction,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: daysRemaining <= 10
+                      ? const Color(0xFFEF4444)
+                      : Colors.indigoAccent,
+                ),
+                backgroundColor: daysRemaining <= 10
+                    ? const Color(0xFF7F1D1D).withOpacity(0.2)
+                    : Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+              child: Text(
+                actionLabel,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: daysRemaining <= 10
+                      ? const Color(0xFFFCA5A5)
+                      : Colors.cyanAccent,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showInCallAgentModal() {
     showDialog(
       context: context,
       barrierDismissible: false,
+      useSafeArea: false,
       builder: (dialogContext) => InCallTranscriptionWidget(
-        initialSymptom: 'Generator ABC123 Coolant Overheat Tripped',
+        assetId: _activeAsset.id,
+        assetName: _activeAsset.name,
+        initialSymptom: _activeAsset.defaultSymptom,
         onCallComplete: ({
           required bool dispatchRequired,
           required String resolutionNotes,
@@ -312,15 +785,14 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                           Row(
                             children: [
                               Container(
-                                decoration: BoxDecoration(
-                                  color: FlutterFlowTheme.of(context).primary,
-                                  borderRadius: BorderRadius.circular(8),
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Colors.transparent,
                                 ),
-                                padding: const EdgeInsets.all(6),
-                                child: const Icon(
-                                  Icons.factory_rounded,
-                                  color: Colors.white,
-                                  size: 20,
+                                child: Image.asset(
+                                  'assets/images/app_logo.png',
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -454,6 +926,437 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
+  // PREDICTIVE MAINTENANCE EARLY WARNING BANNER
+  Widget _buildPredictiveMaintenanceAlertCard() {
+    final alert = _activeAsset.predictiveAlert;
+    if (alert == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E1B4B), Color(0xFF0F172A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: alert.severityColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: alert.severityColor.withOpacity(0.15),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, _) => Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: alert.severityColor.withOpacity(0.25),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: alert.severityColor
+                                .withOpacity(0.4 * _pulseAnimation.value),
+                            blurRadius: 8 * _pulseAnimation.value,
+                          )
+                        ],
+                      ),
+                      child: Icon(Icons.warning_amber_rounded,
+                          color: alert.severityColor, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        alert.title,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: const Color(0xFFFCA5A5),
+                        ),
+                      ),
+                      Text(
+                        'Asset: ${_activeAsset.name}',
+                        style: GoogleFonts.roboto(
+                          fontSize: 10,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: alert.severityColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: alert.severityColor),
+                ),
+                child: Text(
+                  '${alert.daysToLimit} DAYS',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            alert.component,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            alert.description,
+            style: GoogleFonts.roboto(
+              fontSize: 11,
+              color: const Color(0xFFCBD5E1),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Health Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (_activeAsset.healthScore / 100.0).clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: const Color(0xFF334155),
+              valueColor: AlwaysStoppedAnimation<Color>(alert.severityColor),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _isPreRequisitioned = true;
+                      _isAppointmentDismissed = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: const Color(0xFF065F46),
+                        duration: const Duration(seconds: 3),
+                        content: Row(
+                          children: [
+                            const Icon(Icons.verified_rounded,
+                                color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '✅ ${alert.recommendedAction} scheduled! Preventive service confirmed for $_scheduledDate with Tech Ravi Kumar.',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.shopping_cart_checkout_rounded,
+                      size: 14, color: Colors.white),
+                  label: Text(
+                    alert.recommendedAction.length > 25
+                        ? '${alert.recommendedAction.substring(0, 24)}...'
+                        : alert.recommendedAction,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F46E5),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: _showPredictiveMaintenanceModal,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF64748B)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'All Parts',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.cyanAccent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // CONFIRMED PREVENTIVE SERVICE APPOINTMENT CARD (REPLACES WARNING AFTER PRE-REQUISITION)
+  Widget _buildConfirmedAppointmentCard() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF064E3B), Color(0xFF0B192C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withOpacity(0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, _) => Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withOpacity(0.25),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981)
+                                .withOpacity(0.4 * _pulseAnimation.value),
+                            blurRadius: 8 * _pulseAnimation.value,
+                          )
+                        ],
+                      ),
+                      child: const Icon(Icons.verified_rounded,
+                          color: Color(0xFF34D399), size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PREVENTIVE SERVICE APPOINTMENT CONFIRMED',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: const Color(0xFF6EE7B7),
+                        ),
+                      ),
+                      Text(
+                        'Work Order Ref: REQ-78234-HC • Pre-emptive Window',
+                        style: GoogleFonts.roboto(
+                          fontSize: 10,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () => setState(() => _isAppointmentDismissed = true),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child:
+                      const Icon(Icons.close, size: 14, color: Colors.white70),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Lower Radiator Hose & Clamp Replacement (Kit #HC-500)',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Appointment Info Rows
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A).withOpacity(0.6),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF1E293B)),
+            ),
+            child: Column(
+              children: [
+                _buildAppointmentDetailRow(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Appointment',
+                  value:
+                      '$_scheduledDate at $_scheduledTime (7d before wear limit)',
+                  valueColor: const Color(0xFF34D399),
+                ),
+                const SizedBox(height: 8),
+                _buildAppointmentDetailRow(
+                  icon: Icons.engineering_rounded,
+                  label: 'Field Specialist',
+                  value: 'Ravi Kumar (Van #4 • Peenya Service Desk)',
+                  valueColor: Colors.white,
+                ),
+                const SizedBox(height: 8),
+                _buildAppointmentDetailRow(
+                  icon: Icons.inventory_2_rounded,
+                  label: 'Part Allocated',
+                  value: 'OEM Kit #HC-500 (Reserved from Central Hub)',
+                  valueColor: const Color(0xFF93C5FD),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: Color(0xFF1E1B4B),
+                        content: Text(
+                            '📅 Appointment confirmed for Aug 28, 10:30 AM. SMS and Calendar invite sent to Arun Kumar.'),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_calendar_rounded,
+                      size: 14, color: Color(0xFF6EE7B7)),
+                  label: Text(
+                    'Modify / Reschedule',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF6EE7B7),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF10B981)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _showPredictiveMaintenanceModal,
+                  icon: const Icon(Icons.inventory_rounded,
+                      size: 14, color: Colors.white),
+                  label: Text(
+                    'Track All Parts (4)',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: valueColor),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF94A3B8),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.roboto(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              color: valueColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // TAB 0: HOME / DASHBOARD VIEW
   Widget _buildHomeView() {
     return SingleChildScrollView(
@@ -461,6 +1364,14 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // PREDICTIVE MAINTENANCE CARD (WARNING vs. CONFIRMED APPOINTMENT)
+          if (!_isAppointmentDismissed) ...[
+            _isPreRequisitioned
+                ? _buildConfirmedAppointmentCard()
+                : _buildPredictiveMaintenanceAlertCard(),
+            const SizedBox(height: 16),
+          ],
+
           // Main Asset Card
           Container(
             decoration: BoxDecoration(
@@ -490,9 +1401,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _selectedAssetId == 'ABC123'
-                                ? 'Generator ABC123'
-                                : 'Asset $_selectedAssetId',
+                            _activeAsset.name,
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -501,7 +1410,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Cummins 500KVA • SN-78234-B • Peenya, BLR',
+                            '${_activeAsset.productModel} • ${_activeAsset.serialNumber} • ${_activeAsset.location}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.roboto(
@@ -513,52 +1422,89 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).success10,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: FlutterFlowTheme.of(context).success30,
-                          width: 1,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedBuilder(
-                            animation: _pulseAnimation,
-                            builder: (context, _) => Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context).success,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: FlutterFlowTheme.of(context)
-                                        .success
-                                        .withOpacity(
-                                            _pulseAnimation.value * 0.6),
-                                    blurRadius: 6 * _pulseAnimation.value,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          onTap: _showQuickAssetSwitcherModal,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: FlutterFlowTheme.of(context).primary.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Active',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: FlutterFlowTheme.of(context).onSuccess,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.swap_horiz_rounded,
+                                    size: 14,
+                                    color: FlutterFlowTheme.of(context).primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Switch',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: FlutterFlowTheme.of(context).primary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: _activeAsset.statusColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _activeAsset.statusColor.withOpacity(0.4),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _pulseAnimation,
+                                builder: (context, _) => Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: _activeAsset.statusColor,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _activeAsset.statusColor
+                                            .withOpacity(
+                                                _pulseAnimation.value * 0.6),
+                                        blurRadius: 6 * _pulseAnimation.value,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _activeAsset.status,
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: _activeAsset.statusColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -574,10 +1520,10 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildSpecItem('Serial Number', 'SN-78234-B'),
-                    _buildSpecItem('Install Date', 'Mar 2022'),
-                    _buildSpecItem('Last Service', '3 months ago'),
-                    _buildSpecItem('Location', 'Peenya, BLR'),
+                    _buildSpecItem('Serial Number', _activeAsset.serialNumber),
+                    _buildSpecItem('Install Date', _activeAsset.installDate),
+                    _buildSpecItem('Last Service', _activeAsset.lastService),
+                    _buildSpecItem('Location', _activeAsset.location),
                   ],
                 ),
                 const Divider(height: 22, thickness: 1),
@@ -585,16 +1531,28 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                 Row(
                   children: [
                     _buildTelemetryMetric(
-                        'Load', '78%', Icons.bolt_rounded, const Color(0xFF3B82F6)),
+                        'Load',
+                        '${_activeAsset.telemetry.loadPercent.toStringAsFixed(0)}%',
+                        Icons.bolt_rounded,
+                        const Color(0xFF3B82F6)),
                     const SizedBox(width: 8),
-                    _buildTelemetryMetric('Coolant', '82°C',
-                        Icons.thermostat_rounded, const Color(0xFFEF4444)),
+                    _buildTelemetryMetric(
+                        'Temp',
+                        '${_activeAsset.telemetry.temperatureC.toStringAsFixed(1)}°C',
+                        Icons.thermostat_rounded,
+                        const Color(0xFFEF4444)),
                     const SizedBox(width: 8),
-                    _buildTelemetryMetric('Vibration', '1.2 mm/s',
-                        Icons.vibration_rounded, const Color(0xFF10B981)),
+                    _buildTelemetryMetric(
+                        'Vibration',
+                        '${_activeAsset.telemetry.vibrationMmS.toStringAsFixed(1)} mm/s',
+                        Icons.vibration_rounded,
+                        const Color(0xFF10B981)),
                     const SizedBox(width: 8),
-                    _buildTelemetryMetric('Runtime', '1,847h',
-                        Icons.timer_rounded, const Color(0xFF8B5CF6)),
+                    _buildTelemetryMetric(
+                        'Runtime',
+                        '${_activeAsset.telemetry.operatingHours}h',
+                        Icons.timer_rounded,
+                        const Color(0xFF8B5CF6)),
                   ],
                 ),
               ],
@@ -610,7 +1568,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
               size: 20,
             ),
             iconPresent: true,
-            content: 'Report Issue with AI',
+            content: 'Report Issue for ${_activeAsset.id}',
             variant: 'primary',
             size: 'large',
             fullWidth: true,
@@ -698,6 +1656,20 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                if (_isPreRequisitioned) ...[
+                  ActivityItemWidget(
+                    color: const Color(0xFF10B981),
+                    date: 'Aug 28, 2026',
+                    icon: const Icon(
+                      Icons.event_available_rounded,
+                      color: Color(0xFF10B981),
+                      size: 18,
+                    ),
+                    status: 'Scheduled',
+                    title: 'Pre-emptive Hose & Clamp (Kit #HC-500)',
+                  ),
+                  const Divider(height: 20, thickness: 1),
+                ],
                 ActivityItemWidget(
                   color: FlutterFlowTheme.of(context).success,
                   date: 'Jan 15, 2026',
@@ -741,14 +1713,525 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
+  // FILTERED ASSETS GETTER (Multi-product and Multi-instance support)
+  List<PlantAsset> get _filteredAssets {
+    return _fleetAssets.where((asset) {
+      final filter = _selectedAssetFilter;
+      bool matchesFilter = true;
+      if (filter == 'All') {
+        matchesFilter = true;
+      } else if (filter == 'Power Gen' || filter == 'Generators') {
+        matchesFilter = asset.category == 'Generators';
+      } else if (filter == 'Compressors') {
+        matchesFilter = asset.category == 'Compressors';
+      } else if (filter == 'HVAC') {
+        matchesFilter = asset.category == 'HVAC';
+      } else if (filter == 'Boilers') {
+        matchesFilter = asset.category == 'Boilers';
+      } else if (filter == 'Robotics') {
+        matchesFilter = asset.category == 'Robotics';
+      }
+
+      final query = _searchQuery.trim().toLowerCase();
+      final matchesQuery = query.isEmpty ||
+          asset.name.toLowerCase().contains(query) ||
+          asset.productModel.toLowerCase().contains(query) ||
+          asset.serialNumber.toLowerCase().contains(query) ||
+          asset.location.toLowerCase().contains(query) ||
+          asset.id.toLowerCase().contains(query);
+
+      return matchesFilter && matchesQuery;
+    }).toList();
+  }
+
+  // MODAL: QUICK UNIT SWITCHER
+  void _showQuickAssetSwitcherModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
+        decoration: BoxDecoration(
+          color: FlutterFlowTheme.of(context).secondaryBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.swap_horiz_rounded,
+                          color: FlutterFlowTheme.of(context).primary, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Switch Plant Equipment Unit',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                        Text(
+                          'Select any unit across identical lines or diverse products',
+                          style: GoogleFonts.roboto(
+                            fontSize: 11,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.separated(
+                itemCount: _fleetAssets.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final asset = _fleetAssets[index];
+                  final isSelected = asset.id == _selectedAssetId;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedAssetId = asset.id;
+                      });
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF1E293B),
+                          duration: const Duration(seconds: 2),
+                          content: Text(
+                            'Active unit switched to ${asset.name}',
+                            style: GoogleFonts.inter(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? FlutterFlowTheme.of(context).primary.withOpacity(0.08)
+                            : FlutterFlowTheme.of(context).primaryBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).alternate,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: asset.statusColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              asset.category == 'Generators'
+                                  ? Icons.power_rounded
+                                  : (asset.category == 'Compressors'
+                                      ? Icons.air_rounded
+                                      : (asset.category == 'HVAC'
+                                          ? Icons.ac_unit_rounded
+                                          : (asset.category == 'Boilers'
+                                              ? Icons.local_fire_department_rounded
+                                              : Icons.smart_toy_rounded))),
+                              color: asset.statusColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        asset.name,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: FlutterFlowTheme.of(context)
+                                              .primaryText,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: asset.statusColor.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        asset.status,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: asset.statusColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${asset.productModel} • ${asset.location}',
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 11,
+                                    color: FlutterFlowTheme.of(context)
+                                        .secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isSelected) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: FlutterFlowTheme.of(context).primary,
+                              size: 20,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // MODAL: ADD / CLONE ASSET UNIT
+  void _showAddAssetModal() {
+    String selectedCategory = 'Generators';
+    String baseProduct = 'Cummins 500KVA Diesel GenSet';
+    final nameCtrl = TextEditingController(text: 'Generator Unit #${_fleetAssets.where((a) => a.category == 'Generators').length + 1}');
+    final serialCtrl = TextEditingController(text: 'SN-7823${_fleetAssets.length + 5}-E');
+    final locCtrl = TextEditingController(text: 'Bay ${_fleetAssets.length * 2} Heavy Power');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          decoration: BoxDecoration(
+            color: FlutterFlowTheme.of(context).secondaryBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.add_box_rounded,
+                              color: Color(0xFF10B981), size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Register / Clone Unit',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: FlutterFlowTheme.of(context).primaryText,
+                              ),
+                            ),
+                            Text(
+                              'Add multiple units of identical products or new lines',
+                              style: GoogleFonts.roboto(
+                                fontSize: 11,
+                                color: FlutterFlowTheme.of(context).secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Category Selector
+                Text('Equipment Category',
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primaryText)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  children: ['Generators', 'Compressors', 'HVAC', 'Boilers', 'Robotics'].map((cat) {
+                    final isSel = selectedCategory == cat;
+                    return ChoiceChip(
+                      label: Text(cat,
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 11,
+                              color: isSel ? Colors.white : FlutterFlowTheme.of(context).primaryText)),
+                      selected: isSel,
+                      selectedColor: FlutterFlowTheme.of(context).primary,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setModalState(() {
+                            selectedCategory = cat;
+                            if (cat == 'Generators') {
+                              baseProduct = 'Cummins 500KVA Diesel GenSet';
+                              nameCtrl.text = 'Generator Unit #${_fleetAssets.where((a) => a.category == 'Generators').length + 1}';
+                            } else if (cat == 'Compressors') {
+                              baseProduct = 'Atlas Copco Rotary Screw 75HP';
+                              nameCtrl.text = 'Air Compressor #${_fleetAssets.where((a) => a.category == 'Compressors').length + 1}';
+                            } else if (cat == 'HVAC') {
+                              baseProduct = 'Daikin Water-Cooled 200TR';
+                              nameCtrl.text = 'Chiller Unit CH-0${_fleetAssets.where((a) => a.category == 'HVAC').length + 1}';
+                            } else if (cat == 'Boilers') {
+                              baseProduct = 'Thermax Packaged 500kg/hr';
+                              nameCtrl.text = 'Steam Boiler B-0${_fleetAssets.where((a) => a.category == 'Boilers').length + 1}';
+                            } else {
+                              baseProduct = 'Fanuc M-20iD/35 Industrial Robot';
+                              nameCtrl.text = 'Robotic Arm (ROB-0${_fleetAssets.where((a) => a.category == 'Robotics').length + 1})';
+                            }
+                          });
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+
+                // Base Product Model
+                Text('Product Specification Model',
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primaryText)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: FlutterFlowTheme.of(context).primaryBackground,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: FlutterFlowTheme.of(context).alternate),
+                  ),
+                  child: Text(baseProduct,
+                      style: GoogleFonts.roboto(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: FlutterFlowTheme.of(context).primaryText)),
+                ),
+                const SizedBox(height: 12),
+
+                // Unit Name
+                Text('Unit Name / Identifier',
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: FlutterFlowTheme.of(context).primaryText)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Serial & Location
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Serial Number',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: FlutterFlowTheme.of(context).primaryText)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: serialCtrl,
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Bay / Line Location',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: FlutterFlowTheme.of(context).primaryText)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: locCtrl,
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Save button
+                ButtonWidget(
+                  content: 'Save Unit to Fleet',
+                  variant: 'primary',
+                  size: 'large',
+                  fullWidth: true,
+                  onTap: () {
+                    final newId = 'UNIT-${_fleetAssets.length + 101}';
+                    final newAsset = PlantAsset(
+                      id: newId,
+                      name: nameCtrl.text.trim(),
+                      productModel: baseProduct,
+                      category: selectedCategory,
+                      manufacturer: 'OEM Industrial Certified',
+                      serialNumber: serialCtrl.text.trim(),
+                      location: locCtrl.text.trim(),
+                      installDate: 'Aug 2026',
+                      lastService: 'Initial Commissioning',
+                      status: 'Active',
+                      statusColor: const Color(0xFF10B981),
+                      healthScore: 100,
+                      telemetry: const AssetTelemetry(
+                        loadPercent: 50.0,
+                        temperatureC: 65.0,
+                        vibrationMmS: 0.8,
+                        pressureBar: 5.0,
+                        operatingHours: 12,
+                      ),
+                      predictiveAlert: const PredictiveAlert(
+                        title: 'OPTIMAL: Commissioning Complete',
+                        component: 'Initial Break-in Cycle',
+                        daysToLimit: 365,
+                        description: 'Brand new asset operating within prime factory tolerances.',
+                        recommendedAction: 'Schedule 100h initial oil analysis.',
+                        severity: 'OPTIMAL',
+                        severityColor: Color(0xFF10B981),
+                      ),
+                      defaultSymptom: 'Routine Telemetry Sync on ${nameCtrl.text.trim()}',
+                      commonParts: ['Break-in Oil Filter', 'Service Kit A'],
+                    );
+
+                    setState(() {
+                      _fleetAssets.add(newAsset);
+                      _selectedAssetId = newId;
+                    });
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: const Color(0xFF065F46),
+                        content: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Unit registered! Added ${newAsset.name} to active fleet.',
+                                style: GoogleFonts.inter(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // TAB 1: ASSETS / FLEET MANAGEMENT VIEW
   Widget _buildAssetsView() {
+    final activeCount = _fleetAssets.where((a) => a.status == 'Active' || a.status == 'Running').length;
+    final alertCount = _fleetAssets.where((a) => a.status == 'Maintenance' || a.status == 'Warning').length;
+    final avgHealth = (_fleetAssets.map((a) => a.healthScore).reduce((a, b) => a + b) / _fleetAssets.length).round();
+
+    final filtered = _filteredAssets;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header Stats
+          // Header Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -756,7 +2239,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Plant Fleet Assets',
+                    'Plant Fleet Management',
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -772,43 +2255,112 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                   ),
                 ],
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: FlutterFlowTheme.of(context).primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '4 Assets',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+              InkWell(
+                onTap: _showAddAssetModal,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
                     color: FlutterFlowTheme.of(context).primary,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add_rounded, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Add / Clone',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // Live Search Bar
+          Container(
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: FlutterFlowTheme.of(context).alternate,
+              ),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                });
+              },
+              style: GoogleFonts.roboto(
+                fontSize: 13,
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search units, product models, serials, or bays...',
+                hintStyle: GoogleFonts.roboto(
+                  fontSize: 12,
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                  size: 20,
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
 
           // Fleet KPI Cards
           Row(
             children: [
               Expanded(
-                  child: _buildFleetStatCard(
-                      'ACTIVE', '3 Units', const Color(0xFF10B981))),
+                child: _buildFleetStatCard(
+                    'TOTAL', '${_fleetAssets.length} Units', FlutterFlowTheme.of(context).primary),
+              ),
               const SizedBox(width: 8),
               Expanded(
-                  child: _buildFleetStatCard(
-                      'MAINT', '1 Unit', const Color(0xFFEF4444))),
+                child: _buildFleetStatCard(
+                    'ACTIVE', '$activeCount Units', const Color(0xFF10B981)),
+              ),
               const SizedBox(width: 8),
               Expanded(
-                  child: _buildFleetStatCard(
-                      'UPTIME', '99.1%', const Color(0xFF3B82F6))),
+                child: _buildFleetStatCard(
+                    'HEALTH', '$avgHealth% Avg', const Color(0xFF3B82F6)),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Category Filter Pills
           SingleChildScrollView(
@@ -817,62 +2369,59 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
               children: [
                 _buildFilterPill('All'),
                 const SizedBox(width: 8),
-                _buildFilterPill('Power Gen'),
+                _buildFilterPill('Generators'),
                 const SizedBox(width: 8),
                 _buildFilterPill('Compressors'),
                 const SizedBox(width: 8),
                 _buildFilterPill('HVAC'),
                 const SizedBox(width: 8),
                 _buildFilterPill('Boilers'),
+                const SizedBox(width: 8),
+                _buildFilterPill('Robotics'),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // Fleet Asset Cards
-          _buildFleetCard(
-            id: 'ABC123',
-            name: 'Generator ABC123',
-            type: 'Cummins 500KVA Diesel GenSet',
-            location: 'Bay 4 Heavy Power',
-            status: 'Active',
-            statusColor: const Color(0xFF10B981),
-            metrics: 'Load 78% • 82°C • 1,847h',
-            isSelected: _selectedAssetId == 'ABC123',
-          ),
-          const SizedBox(height: 12),
-          _buildFleetCard(
-            id: 'AC-10',
-            name: 'Air Compressor AC-10',
-            type: 'Atlas Copco Rotary Screw 75HP',
-            location: 'Pneumatics Room B',
-            status: 'Running',
-            statusColor: const Color(0xFF3B82F6),
-            metrics: '7.4 Bar • 100% Flow • 3,420h',
-            isSelected: _selectedAssetId == 'AC-10',
-          ),
-          const SizedBox(height: 12),
-          _buildFleetCard(
-            id: 'CH-02',
-            name: 'Chiller Unit CH-02',
-            type: 'Daikin Water-Cooled 200TR',
-            location: 'HVAC Chiller Plant',
-            status: 'Standby',
-            statusColor: const Color(0xFFF59E0B),
-            metrics: '6.8°C Chilled Water • Ready',
-            isSelected: _selectedAssetId == 'CH-02',
-          ),
-          const SizedBox(height: 12),
-          _buildFleetCard(
-            id: 'B-99',
-            name: 'Steam Boiler B-99',
-            type: 'Thermax Packaged 500kg/hr',
-            location: 'Boiler House Bay 1',
-            status: 'Maintenance',
-            statusColor: const Color(0xFFEF4444),
-            metrics: 'Pressure Sensor Alert • Scheduled',
-            isSelected: _selectedAssetId == 'B-99',
-          ),
+          // Fleet Asset Cards List
+          if (filtered.isEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: FlutterFlowTheme.of(context).secondaryBackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: FlutterFlowTheme.of(context).alternate),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.search_off_rounded,
+                      size: 40, color: FlutterFlowTheme.of(context).secondaryText),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No assets matching "$_searchQuery"',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Try changing search filters or register a new unit.',
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            ...filtered.map((asset) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildFleetCard(asset),
+                )),
+          ],
         ],
       ),
     );
@@ -889,22 +2438,31 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: GoogleFonts.spaceGrotesk(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: FlutterFlowTheme.of(context).secondaryText)),
+          Text(
+            label,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(value,
-              style: GoogleFonts.inter(
-                  fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildFilterPill(String category) {
-    bool isSelected = _selectedAssetFilter == category;
+    bool isSelected = _selectedAssetFilter == category ||
+        (_selectedAssetFilter == 'Power Gen' && category == 'Generators');
     return InkWell(
       onTap: () {
         setState(() => _selectedAssetFilter = category);
@@ -937,20 +2495,12 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
     );
   }
 
-  Widget _buildFleetCard({
-    required String id,
-    required String name,
-    required String type,
-    required String location,
-    required String status,
-    required Color statusColor,
-    required String metrics,
-    required bool isSelected,
-  }) {
+  Widget _buildFleetCard(PlantAsset asset) {
+    final isSelected = _selectedAssetId == asset.id;
     return InkWell(
       onTap: () {
         setState(() {
-          _selectedAssetId = id;
+          _selectedAssetId = asset.id;
           _currentNavIndex = 0; // Switch to home dashboard for this asset
         });
       },
@@ -966,6 +2516,15 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                 : FlutterFlowTheme.of(context).alternate,
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: FlutterFlowTheme.of(context).primary.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -978,46 +2537,81 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.12),
+                        color: asset.statusColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.memory_rounded,
-                          color: statusColor, size: 20),
+                      child: Icon(
+                        asset.category == 'Generators'
+                            ? Icons.power_rounded
+                            : (asset.category == 'Compressors'
+                                ? Icons.air_rounded
+                                : (asset.category == 'HVAC'
+                                    ? Icons.ac_unit_rounded
+                                    : (asset.category == 'Boilers'
+                                        ? Icons.local_fire_department_rounded
+                                        : Icons.smart_toy_rounded))),
+                        color: asset.statusColor,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
-                            style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    FlutterFlowTheme.of(context).primaryText)),
-                        Text(type,
-                            style: GoogleFonts.roboto(
-                                fontSize: 11,
-                                color: FlutterFlowTheme.of(context)
-                                    .secondaryText)),
+                        Text(
+                          asset.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                        Text(
+                          asset.productModel,
+                          style: GoogleFonts.roboto(
+                            fontSize: 11,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                        ),
                       ],
                     ),
                   ],
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    status,
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${asset.healthScore}% HP',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: FlutterFlowTheme.of(context).primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: asset.statusColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: asset.statusColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        asset.status,
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: asset.statusColor),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1031,7 +2625,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                         size: 13,
                         color: FlutterFlowTheme.of(context).secondaryText),
                     const SizedBox(width: 4),
-                    Text(location,
+                    Text(asset.location,
                         style: GoogleFonts.roboto(
                             fontSize: 11,
                             color: FlutterFlowTheme.of(context).secondaryText)),
@@ -1043,11 +2637,13 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                         size: 13,
                         color: FlutterFlowTheme.of(context).primary),
                     const SizedBox(width: 4),
-                    Text(metrics,
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: FlutterFlowTheme.of(context).primaryText)),
+                    Text(
+                      'Load ${asset.telemetry.loadPercent.toInt()}% • ${asset.telemetry.temperatureC.toStringAsFixed(0)}°C • ${asset.telemetry.operatingHours}h',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: FlutterFlowTheme.of(context).primaryText),
+                    ),
                   ],
                 ),
               ],

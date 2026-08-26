@@ -1,6 +1,7 @@
 import '/components/button/button_widget.dart';
 import '/components/in_call_agentic_troubleshooting/in_call_transcription_widget.dart';
 import '/components/step_indicator/step_indicator_widget.dart';
+import '/data/plant_asset_data.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -11,7 +12,8 @@ import 'issue_report_model.dart';
 export 'issue_report_model.dart';
 
 class IssueReportWidget extends StatefulWidget {
-  const IssueReportWidget({super.key});
+  final String? initialAssetId;
+  const IssueReportWidget({super.key, this.initialAssetId});
 
   static String routeName = 'IssueReport';
   static String routePath = '/issueReport';
@@ -25,6 +27,8 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
   bool isPlayingAudio = false;
   bool showHeatmap = true;
   String faultCode = 'ERR-704 (Coolant Overheat)';
+  late List<PlantAsset> _fleetAssets;
+  late PlantAsset _selectedAsset;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -32,6 +36,11 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => IssueReportModel());
+    _fleetAssets = PlantAssetRepository.getInitialFleet();
+    _selectedAsset = _fleetAssets.firstWhere(
+      (a) => a.id == widget.initialAssetId,
+      orElse: () => _fleetAssets.first,
+    );
   }
 
   @override
@@ -44,8 +53,11 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
     showDialog(
       context: context,
       barrierDismissible: false,
+      useSafeArea: false,
       builder: (dialogContext) => InCallTranscriptionWidget(
-        initialSymptom: 'ERR-704 Coolant Overheat Tripped on Generator ABC123',
+        assetId: _selectedAsset.id,
+        assetName: _selectedAsset.name,
+        initialSymptom: _selectedAsset.defaultSymptom,
         onCallComplete: ({
           required bool dispatchRequired,
           required String resolutionNotes,
@@ -262,39 +274,60 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
                         ),
                         padding: const EdgeInsets.all(12),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context).primary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: const Icon(
-                                Icons.settings_input_component_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Row(
                               children: [
-                                Text(
-                                  'ABC123',
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                                Container(
+                                  decoration: BoxDecoration(
                                     color: FlutterFlowTheme.of(context).primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  child: const Icon(
+                                    Icons.settings_input_component_rounded,
+                                    color: Colors.white,
+                                    size: 18,
                                   ),
                                 ),
-                                Text(
-                                  'Cummins 500KVA · Peenya, Bangalore',
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 11,
-                                    color: FlutterFlowTheme.of(context).primary,
-                                  ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedAsset.name,
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: FlutterFlowTheme.of(context).primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_selectedAsset.productModel} · ${_selectedAsset.location}',
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 11,
+                                        color: FlutterFlowTheme.of(context).primary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: FlutterFlowTheme.of(context).primary.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _selectedAsset.id,
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: FlutterFlowTheme.of(context).primary,
+                                ),
+                              ),
                             ),
                           ],
                         ),

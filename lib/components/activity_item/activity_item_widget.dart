@@ -48,46 +48,55 @@ class _ActivityItemWidgetState extends State<ActivityItemWidget> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: widget.color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: widget.icon,
               ),
-              alignment: Alignment.center,
-              child: widget.icon,
-            ),
-            const SizedBox(width: 12),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        font: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        color: FlutterFlowTheme.of(context).primaryText,
-                      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                            font: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                    ),
+                    Text(
+                      widget.date,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: FlutterFlowTheme.of(context).labelSmall.override(
+                            font: GoogleFonts.spaceGrotesk(),
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                    ),
+                  ],
                 ),
-                Text(
-                  widget.date,
-                  style: FlutterFlowTheme.of(context).labelSmall.override(
-                        font: GoogleFonts.spaceGrotesk(),
-                        color: FlutterFlowTheme.of(context).secondaryText,
-                      ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Container(
           decoration: BoxDecoration(
             color: widget.color.withOpacity(0.1),

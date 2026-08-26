@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import '/components/feedback/post_call_feedback_widget.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ export 'in_call_transcription_model.dart';
 /// Data class representing a transcript line in the in-call stream.
 class TranscriptMessage {
   final String id;
-  final String speaker; // 'operator' or 'ai' or 'system'
+  final String speaker; // 'operator' | 'ai' | 'system' | 'human_agent'
   final String message;
   final String timestamp;
   final List<String> entities;
@@ -27,31 +28,20 @@ class TranscriptMessage {
   });
 }
 
-/// Dynamic troubleshooting decision branch
-class TroubleshootingOption {
-  final String label;
-  final String description;
-  final IconData icon;
-  final Color iconColor;
-  final VoidCallback onSelect;
-
-  TroubleshootingOption({
-    required this.label,
-    required this.description,
-    required this.icon,
-    required this.iconColor,
-    required this.onSelect,
-  });
-}
-
 class InCallTranscriptionWidget extends StatefulWidget {
   const InCallTranscriptionWidget({
     super.key,
     required this.onCallComplete,
     this.initialSymptom = 'ERR-704 Coolant Overheat after 10m load',
+    this.assetId = 'ABC123',
+    this.assetName = 'Generator Unit #1 (ABC123)',
+    this.specialistName = 'Ravi Kumar (Lead Field Specialist)',
   });
 
   final String initialSymptom;
+  final String assetId;
+  final String assetName;
+  final String specialistName;
   final void Function({
     required bool dispatchRequired,
     required String resolutionNotes,
@@ -71,33 +61,54 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
   final ScrollController _scrollController = ScrollController();
 
   // Animation Controllers
-  late AnimationController _equalizerController;
+  late AnimationController _voiceOrbController;
   late AnimationController _pulseController;
+  late AnimationController _waveController;
 
-  // Call duration state
+  // Call timer state
   Timer? _callTimer;
   int _callSeconds = 14; // start at 14s for realistic demo
 
-  // Dynamic Call States
-  // 1: In-call Greeting & SToT initial processing
-  // 2: Dynamic Prompt 1 (Symptom Isolation)
-  // 3: Agent Reasoning / Tool Execution (Freshworks / OEM)
-  // 4: Dynamic Prompt 2 (In-Call Actionable Check)
+  // Dynamic Call States:
+  // 1: Connecting / Greeting
+  // 2: Step 1 (Symptom Isolation)
+  // 3: AI Reasoning / MCP Tool Lookup
+  // 4: Step 2 (Guided Physical Test)
   // 5: Diagnostic Synthesis
   // 6: Call Finalized (Resolution Certified)
   int _callStage = 1;
 
+  // View Mode: 'hud' (Voice Calling Visualizer) or 'transcript' (Full Live Transcript)
+  String _activeViewMode = 'hud';
+
+  // Live Audio & In-Call States
   bool _isMuted = false;
   bool _isSpeakerOn = true;
-  bool _showToolLogs = true;
+  bool _isCameraActive = false;
+  bool _aiSpeaking = true;
+  bool _operatorSpeaking = false;
+  bool _humanSpeaking = false;
   bool _isSynthesizing = false;
+
+  // Human Escalation States
+  bool _isEscalatedToHuman = false;
+  bool _isBriefingExpanded = true;
+  final String _humanAgentName = 'Ravi Kumar';
+  final String _humanAgentRole = 'Lead Field Specialist (Peenya Desk)';
+
+  // Dynamic Live Telemetry values
+  double _telemetryTemp = 98.4;
+  double _telemetryPressure = 1.42;
+  int _diagnosticConfidence = 71;
+  String _liveFeedbackStatus =
+      'Apex-7 connected • Synchronizing SCADA telemetry...';
 
   // Selected paths for branching
   String _selectedSymptom = '';
   String _selectedActionTest = '';
   bool _isSelfResolved = false;
-  int _diagnosticConfidence = 71;
-  String _detectedRootCause = 'Cooling restriction at lower hose clamp assembly';
+  String _detectedRootCause =
+      'Cooling restriction at lower hose clamp assembly';
 
   // Live Transcript Stream
   final List<TranscriptMessage> _transcript = [];
@@ -107,14 +118,19 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     super.initState();
     _model = createModel(context, () => InCallTranscriptionModel());
 
-    _equalizerController = AnimationController(
+    _voiceOrbController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
 
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
     )..repeat(reverse: true);
 
     _startCallTimer();
@@ -124,8 +140,9 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
   @override
   void dispose() {
     _callTimer?.cancel();
-    _equalizerController.dispose();
+    _voiceOrbController.dispose();
     _pulseController.dispose();
+    _waveController.dispose();
     _scrollController.dispose();
     _model.dispose();
     super.dispose();
@@ -188,11 +205,13 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
       ),
     ]);
 
-    // Automatically transition to Stage 2 after initial rendering
-    Future.delayed(const Duration(milliseconds: 800), () {
+    // Transition to Stage 2 (Prompt 1)
+    Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
         setState(() {
           _callStage = 2;
+          _aiSpeaking = false;
+          _liveFeedbackStatus = 'Awaiting symptom isolation from operator...';
         });
         _scrollToBottom();
       }
@@ -203,8 +222,11 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
   void _onSelectSymptom(String symptom, String operatorSpoken, String toolLog) {
     setState(() {
       _selectedSymptom = symptom;
+      _operatorSpeaking = true;
+      _aiSpeaking = false;
       _isSynthesizing = true;
       _callStage = 3;
+      _liveFeedbackStatus = 'Transmitting operator audio response...';
 
       _transcript.add(TranscriptMessage(
         id: 'user_symptom_${DateTime.now().millisecondsSinceEpoch}',
@@ -216,47 +238,58 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     _scrollToBottom();
 
     // AI agent reasons with tools
-    Future.delayed(const Duration(milliseconds: 1400), () {
+    Future.delayed(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
       setState(() {
+        _operatorSpeaking = false;
+        _aiSpeaking = true;
         _isSynthesizing = false;
         _callStage = 4;
 
         if (symptom == 'fluid_dripping') {
           _diagnosticConfidence = 89;
+          _telemetryPressure = 1.38;
+          _liveFeedbackStatus =
+              'AI matched OEM §4.2 specs: 28 Nm torque required.';
           _detectedRootCause =
               'Elastomeric hose clamp fatigue & torque degradation (HC-500)';
           _transcript.add(TranscriptMessage(
             id: 'ai_tool_${DateTime.now().millisecondsSinceEpoch}',
             speaker: 'ai',
             message:
-                'Telemetry confirms coolant expansion pressure is 1.4 bar. OEM manual §4.2 specifies 28 Nm on the lower hose clamp. Let\'s check the clamp bolt torque.',
+                'Telemetry confirms coolant expansion pressure is 1.4 bar. OEM manual §4.2 specifies 28 Nm on the lower hose clamp. Let\'s check the clamp bolt torque with an 8mm driver.',
             timestamp: _formatDuration(_callSeconds),
             toolInvocation: toolLog,
             entities: ['OEM §4.2 Specs: 28 Nm', 'Pressure: 1.4 bar'],
           ));
         } else if (symptom == 'steam_venting') {
           _diagnosticConfidence = 84;
+          _telemetryTemp = 99.1;
+          _liveFeedbackStatus =
+              'Safety alert: Over-pressurization >1.1 bar cap rating.';
           _detectedRootCause =
               'Expansion tank 16 PSI pressure relief cap spring failure';
           _transcript.add(TranscriptMessage(
             id: 'ai_tool_${DateTime.now().millisecondsSinceEpoch}',
             speaker: 'ai',
             message:
-                'Steam indicates over-pressurization exceeding 1.1 bar cap rating. Safety protocol: Do not open expansion cap while hot.',
+                'Steam indicates over-pressurization exceeding 1.1 bar cap rating. Safety protocol: Do not open expansion cap while hot. Let\'s check the cap gasket seal.',
             timestamp: _formatDuration(_callSeconds),
             toolInvocation: toolLog,
             entities: ['Safety Alert: High Temp', 'Cap Rating: 16 PSI'],
           ));
         } else {
           _diagnosticConfidence = 78;
+          _telemetryTemp = 97.8;
+          _liveFeedbackStatus =
+              'SCADA anomaly profile indicates air lock in manifold.';
           _detectedRootCause =
               'Entrapped air pocket in upper radiator manifold (Air Lock)';
           _transcript.add(TranscriptMessage(
             id: 'ai_tool_${DateTime.now().millisecondsSinceEpoch}',
             speaker: 'ai',
             message:
-                'Dry overheat with normal coolant level often points to air lock. Let\'s check the brass bleeder valve on the upper radiator manifold.',
+                'Dry overheat with normal coolant level often points to air lock. Let\'s check the brass bleeder valve #BV-2 on the upper radiator manifold.',
             timestamp: _formatDuration(_callSeconds),
             toolInvocation: toolLog,
             entities: ['Air Lock Protocol', 'Bleeder Valve #BV-2'],
@@ -280,8 +313,11 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
       _selectedActionTest = testOutcome;
       _isSelfResolved = selfResolved;
       _diagnosticConfidence = finalConfidence;
+      _operatorSpeaking = true;
+      _aiSpeaking = false;
       _isSynthesizing = true;
       _callStage = 5;
+      _liveFeedbackStatus = 'Verifying test outcome with telemetry stream...';
 
       _transcript.add(TranscriptMessage(
         id: 'user_action_${DateTime.now().millisecondsSinceEpoch}',
@@ -293,11 +329,23 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     _scrollToBottom();
 
     // AI Finalizes Diagnosis & Requisitions Parts / Certifies Resolution
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
       setState(() {
+        _operatorSpeaking = false;
+        _aiSpeaking = true;
         _isSynthesizing = false;
         _callStage = 6;
+
+        if (selfResolved) {
+          _telemetryTemp = 84.1;
+          _telemetryPressure = 1.08;
+          _liveFeedbackStatus =
+              'Resolution Certified: Temp stabilized at 84°C (Self-Resolved).';
+        } else {
+          _liveFeedbackStatus =
+              'Resolution Certified: Dispatching Specialist Ravi Kumar (ETA 12m).';
+        }
 
         _transcript.add(TranscriptMessage(
           id: 'ai_final_${DateTime.now().millisecondsSinceEpoch}',
@@ -318,76 +366,208 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     });
   }
 
+  // ESCALATE TO HUMAN SERVICE AGENT (RAVI KUMAR) WITH AUTOMATED SUMMARY HANDOVER
+  void _escalateToHumanServiceAgent() {
+    if (_isEscalatedToHuman) return;
+
+    setState(() {
+      _isEscalatedToHuman = true;
+      _humanSpeaking = false;
+      _aiSpeaking = false;
+      _operatorSpeaking = false;
+      _liveFeedbackStatus =
+          'Connecting to Service Desk: Specialist Ravi Kumar (Van #4)...';
+    });
+
+    _transcript.add(TranscriptMessage(
+      id: 'escalate_sys_${DateTime.now().millisecondsSinceEpoch}',
+      speaker: 'system',
+      message:
+          '⚡ Live Call Escalated to Human Service Agent: Ravi Kumar (Lead Field Specialist). Transmitting real-time AI Diagnostic Handover Package & SCADA telemetry.',
+      timestamp: _formatDuration(_callSeconds),
+      toolInvocation:
+          'Freshworks Dispatch: Transmitted Handover Briefing to Tech Ravi Kumar (ETA 12m). Status: 3-WAY CONFERENCE ACTIVE.',
+      entities: ['3-Way Conference', 'Handover Transmitted', 'Tech Ravi Kumar'],
+    ));
+    _scrollToBottom();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        backgroundColor: Color(0xFF1E1B4B),
+        content: Text(
+          '📞 Escalated to Human Field Specialist Ravi Kumar. Transmitting live diagnostic briefing & asset history...',
+        ),
+      ),
+    );
+
+    // Human Specialist joins call with spoken response
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (!mounted) return;
+      setState(() {
+        _humanSpeaking = true;
+        _liveFeedbackStatus =
+            'Specialist Ravi Kumar joined call • Reviewing live briefing...';
+        _transcript.add(TranscriptMessage(
+          id: 'human_agent_${DateTime.now().millisecondsSinceEpoch}',
+          speaker: 'human_agent',
+          message:
+              'Hello Arun, Ravi here from Peenya Field Desk. I just reviewed Apex-7\'s live handover package and SCADA telemetry. I see the 98°C coolant spike and the hose clamp thread failure. I have OEM Kit #HC-500 pre-reserved in Van #4 and I am en route (ETA 12m). Please keep the engine idling with zero load while I arrive.',
+          timestamp: _formatDuration(_callSeconds),
+          entities: [
+            'Specialist Ravi Kumar',
+            'Part #HC-500 Reserved',
+            'ETA: 12m'
+          ],
+        ));
+      });
+      _scrollToBottom();
+    });
+  }
+
+  void _finishAndSubmitCall() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (feedbackCtx) => PostCallFeedbackWidget(
+        assetId: widget.assetId,
+        assetName: widget.assetName,
+        specialistName: _isEscalatedToHuman
+            ? 'Ravi Kumar (Lead Specialist)'
+            : 'Ravi Kumar (Field Specialist)',
+        ticketId: 'SR-8924',
+        diagnosticSummary: _detectedRootCause,
+        onSubmitted: (feedbackResult) {
+          Navigator.pop(feedbackCtx); // Close feedback dialog
+          Navigator.pop(context); // Close in-call dialog
+          final notesDetail = feedbackResult.aiTrainingNotes.isNotEmpty
+              ? ' AI Retraining Feedback: "${feedbackResult.aiTrainingNotes}".'
+              : '';
+          widget.onCallComplete(
+            dispatchRequired: !_isSelfResolved,
+            resolutionNotes: _isSelfResolved
+                ? 'Operator self-resolved via guided 8mm torque. Dual CSAT: ${feedbackResult.agentRating}/5 (AI) & ${feedbackResult.specialistRating}/5 (Tech).$notesDetail'
+                : 'Diagnostic certified: $_detectedRootCause. Dispatched Tech Ravi Kumar. Dual CSAT: ${feedbackResult.agentRating}/5 (AI) & ${feedbackResult.specialistRating}/5 (Tech).$notesDetail',
+            finalConfidence: _diagnosticConfidence,
+            resolvedBy: _isSelfResolved
+                ? 'Operator (Customer Self-Fix)'
+                : (_isEscalatedToHuman
+                    ? 'Ravi Kumar (Lead Specialist) & Apex-7 AI'
+                    : 'Ravi Kumar (L3 Field Specialist)'),
+            rootCause: _detectedRootCause,
+          );
+        },
+        onDismissed: () {
+          Navigator.pop(feedbackCtx); // Close feedback dialog
+          Navigator.pop(context); // Close in-call dialog
+          widget.onCallComplete(
+            dispatchRequired: !_isSelfResolved,
+            resolutionNotes: _isSelfResolved
+                ? 'Operator Arun Kumar resolved hose clamp leakage via guided 8mm torque retighten.'
+                : 'Diagnostic certified: $_detectedRootCause. Dispatched Tech Ravi Kumar.',
+            finalConfidence: _diagnosticConfidence,
+            resolvedBy: _isSelfResolved
+                ? 'Operator Arun Kumar (Customer Self-Fix)'
+                : (_isEscalatedToHuman
+                    ? 'Ravi Kumar (Lead Specialist) & Apex-7 AI'
+                    : 'Ravi Kumar (L3 Field Specialist)'),
+            rootCause: _detectedRootCause,
+          );
+        },
+      ),
+    );
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF0F172A),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.88,
-          maxWidth: 480,
-        ),
-        child: Column(
-          children: [
-            // 1. TOP HEADER: CALL TELEMETRY & PARTICIPANTS
-            _buildInCallHeader(),
-
-            // 2. AGENTIC ACTIVITY BANNER (COLLAPSIBLE)
-            _buildAgenticThoughtBar(),
-
-            // 3. LIVE BIDIRECTIONAL TRANSCRIPT STREAM
-            Expanded(
-              child: _buildTranscriptStream(),
+      insetPadding: EdgeInsets.zero,
+      backgroundColor: Colors.white,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFF8FAFC),
+                  Color(0xFFF1F5F9),
+                  Color(0xFFFFFFFF),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
+            child: Column(
+              children: [
+                // 1. TOP HEADER: CALL STATUS & PARTICIPANT HUD (3-WAY CONFERENCE AWARE)
+                _buildInCallHeader(),
 
-            // 4. DYNAMIC AGENTIC TROUBLESHOOTING PROMPT AREA
-            _buildDynamicPromptArea(),
+                // 2. LIVE TELEMETRY & CONFIDENCE HUD STRIP
+                _buildLiveTelemetryHud(),
 
-            // 5. IN-CALL BOTTOM CONTROLS & ACTIONS
-            _buildBottomCallControls(),
-          ],
+                // 3. LIVE FEEDBACK BANNER (AI / HUMAN / OPERATOR STATE)
+                _buildLiveFeedbackBanner(),
+
+                // 4. MAIN INTERACTIVE CONTENT AREA (VOICE HUD or TRANSCRIPT)
+                Expanded(
+                  child: _activeViewMode == 'hud'
+                      ? _buildVoiceHudView()
+                      : _buildTranscriptStreamView(),
+                ),
+
+                // 5. STEP-BY-STEP GUIDED INTERACTIVE PROMPT DRAWER
+                _buildDynamicPromptArea(),
+
+                // 6. BOTTOM CALL CONTROLS DOCK
+                _buildBottomCallControls(),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // HEADER WIDGET
+  // 1. TOP CALL HEADER HUD
   Widget _buildInCallHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(bottom: BorderSide(color: Color(0xFF334155))),
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Column(
         children: [
+          // Row 1: Live Call Indicator & Meta Badges
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Live Status Badge
+              // Live Status Pill
               Row(
                 children: [
                   AnimatedBuilder(
                     animation: _pulseController,
                     builder: (context, _) => Container(
-                      width: 10,
-                      height: 10,
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
-                        color: _callStage == 6
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                        color: _isEscalatedToHuman
+                            ? const Color(0xFF0284C7)
+                            : (_callStage == 6
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444)),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (_callStage == 6
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFFEF4444))
+                            color: (_isEscalatedToHuman
+                                    ? const Color(0xFF0284C7)
+                                    : (_callStage == 6
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFFEF4444)))
                                 .withOpacity(0.5 * _pulseController.value),
                             blurRadius: 8 * _pulseController.value,
-                            spreadRadius: 2,
+                            spreadRadius: 1.5,
                           )
                         ],
                       ),
@@ -395,37 +575,102 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _callStage == 6
-                        ? 'CALL RESOLUTION CERTIFIED'
-                        : 'LIVE CALL • ${_formatDuration(_callSeconds)}',
+                    _isEscalatedToHuman
+                        ? '3-WAY CONFERENCE • ${_formatDuration(_callSeconds)}'
+                        : (_callStage == 6
+                            ? 'DIAGNOSTIC CERTIFIED • ${_formatDuration(_callSeconds)}'
+                            : 'LIVE AI CALL • ${_formatDuration(_callSeconds)}'),
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                      color: _callStage == 6
-                          ? const Color(0xFF34D399)
-                          : const Color(0xFFF87171),
+                      letterSpacing: 0.5,
+                      color: _isEscalatedToHuman
+                          ? const Color(0xFF0369A1)
+                          : (_callStage == 6
+                              ? const Color(0xFF047857)
+                              : const Color(0xFFB91C1C)),
                     ),
                   ),
                 ],
               ),
 
-              // Audio Waveform Equalizer
+              // Audio Quality & View Toggle
               Row(
                 children: [
-                  _buildEqualizer(),
-                  const SizedBox(width: 12),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.graphic_eq_rounded,
+                            size: 12, color: Color(0xFF0284C7)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'HD Voice',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF0284C7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // View Switcher (HUD / Transcript)
                   InkWell(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      setState(() {
+                        _activeViewMode =
+                            _activeViewMode == 'hud' ? 'transcript' : 'hud';
+                      });
+                    },
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF334155),
+                        color: _activeViewMode == 'transcript'
+                            ? const Color(0xFFEEF2FF)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _activeViewMode == 'transcript'
+                              ? const Color(0xFF6366F1)
+                              : const Color(0xFFCBD5E1),
+                        ),
                       ),
-                      child: const Icon(Icons.close,
-                          size: 18, color: Colors.white70),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _activeViewMode == 'transcript'
+                                ? Icons.phone_in_talk_rounded
+                                : Icons.subtitles_rounded,
+                            size: 13,
+                            color: _activeViewMode == 'transcript'
+                                ? const Color(0xFF4F46E5)
+                                : const Color(0xFF475569),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _activeViewMode == 'transcript'
+                                ? 'Voice HUD'
+                                : 'Transcript',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: _activeViewMode == 'transcript'
+                                  ? const Color(0xFF4F46E5)
+                                  : const Color(0xFF334155),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -434,70 +679,146 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
           ),
           const SizedBox(height: 10),
 
-          // Participants Banner
+          // Row 2: Participants Banner (Shows Human Specialist when escalated)
           Row(
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1A237E),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: const Text('AK',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Arun Kumar (Lead Operator)',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+              // AI Core Avatar or Multi-avatar
+              if (!_isEscalatedToHuman) ...[
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF0284C7),
+                      width: 1.5,
                     ),
-                    Text(
-                      'Generator ABC123 • Peenya Industrial Bay 4',
-                      style: GoogleFonts.roboto(
-                        fontSize: 10,
-                        color: const Color(0xFF94A3B8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0284C7).withOpacity(0.15),
+                        blurRadius: 6,
+                      )
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Apex-7 Diagnostic Core',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFFBAE6FD)),
+                            ),
+                            child: Text(
+                              'QSK19 Engine AI',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0284C7),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4338CA).withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF6366F1)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.auto_awesome,
-                        color: Colors.amberAccent, size: 12),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Apex-7 AI Agent',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Connected to Arun Kumar • Cummins 500KVA (ABC123)',
+                        style: GoogleFonts.roboto(
+                          fontSize: 11,
+                          color: const Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ] else ...[
+                // Escalated 3-Way Conference Banner
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF0284C7), Color(0xFF10B981)],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.engineering_rounded,
+                      color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _humanAgentName,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                  color: const Color(0xFFBAE6FD), width: 0.8),
+                            ),
+                            child: Text(
+                              'Field Specialist Live',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0369A1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '3-Way Call: Arun Kumar + Apex-7 AI Co-Pilot + Ravi Kumar',
+                        style: GoogleFonts.roboto(
+                          fontSize: 10,
+                          color: const Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -505,28 +826,689 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     );
   }
 
-  // ANIMATED EQUALIZER WIDGET
-  Widget _buildEqualizer() {
+  // 2. LIVE TELEMETRY & CONFIDENCE HUD
+  Widget _buildLiveTelemetryHud() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC),
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Telemetry Temp Metric
+          _buildTelemetryMetricChip(
+            icon: Icons.thermostat_rounded,
+            label: 'Coolant Temp',
+            value: '${_telemetryTemp.toStringAsFixed(1)}°C',
+            valueColor: _telemetryTemp < 86
+                ? const Color(0xFF059669)
+                : (_telemetryTemp > 95
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFD97706)),
+          ),
+          // Pressure Metric
+          _buildTelemetryMetricChip(
+            icon: Icons.compress_rounded,
+            label: 'Manifold Pressure',
+            value: '${_telemetryPressure.toStringAsFixed(2)} bar',
+            valueColor: _telemetryPressure <= 1.15
+                ? const Color(0xFF059669)
+                : const Color(0xFFD97706),
+          ),
+          // Diagnostic Confidence Meter
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: _diagnosticConfidence >= 90
+                  ? const Color(0xFFECFDF5)
+                  : const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _diagnosticConfidence >= 90
+                    ? const Color(0xFFA7F3D0)
+                    : const Color(0xFFBFDBFE),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.verified_rounded,
+                  size: 13,
+                  color: _diagnosticConfidence >= 90
+                      ? const Color(0xFF059669)
+                      : const Color(0xFF2563EB),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Confidence: $_diagnosticConfidence%',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: _diagnosticConfidence >= 90
+                        ? const Color(0xFF065F46)
+                        : const Color(0xFF1E40AF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTelemetryMetricChip({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: valueColor),
+        const SizedBox(width: 5),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 8.5,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              value,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 3. LIVE FEEDBACK BANNER (ACTIVE STATE FEEDBACK)
+  Widget _buildLiveFeedbackBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: _isMuted
+            ? const Color(0xFFFEF2F2)
+            : (_operatorSpeaking
+                ? const Color(0xFFECFDF5)
+                : (_humanSpeaking
+                    ? const Color(0xFFF0F9FF)
+                    : const Color(0xFFEFF6FF))),
+        border: Border(
+          bottom: BorderSide(
+            color: _isMuted
+                ? const Color(0xFFFECACA)
+                : (_operatorSpeaking
+                    ? const Color(0xFFA7F3D0)
+                    : (_humanSpeaking
+                        ? const Color(0xFFBAE6FD)
+                        : const Color(0xFFBFDBFE))),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (_isMuted) ...[
+            const Icon(Icons.mic_off_rounded,
+                size: 14, color: Color(0xFFDC2626)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Microphone Muted • Other participants cannot hear you',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF991B1B),
+                ),
+              ),
+            ),
+          ] else if (_operatorSpeaking) ...[
+            const Icon(Icons.record_voice_over_rounded,
+                size: 14, color: Color(0xFF059669)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Operator Arun speaking... Transmitting audio to call stream',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF065F46),
+                ),
+              ),
+            ),
+          ] else if (_humanSpeaking) ...[
+            const Icon(Icons.support_agent_rounded,
+                size: 14, color: Color(0xFF0284C7)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Specialist Ravi Kumar speaking (Peenya Field Desk)...',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF075985),
+                ),
+              ),
+            ),
+          ] else if (_isSynthesizing) ...[
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Apex-7 reasoning with Freshworks MCP & Cummins Knowledge Core...',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1D4ED8),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ] else ...[
+            const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF2563EB)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                _liveFeedbackStatus,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E40AF),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 4. MAIN VOICE HUD VIEW (GLOWING ORB + LIVE DIALOGUE BANNER + HANDOVER BRIEFING)
+  Widget _buildVoiceHudView() {
+    final latestSpeakerMessage = _transcript.lastWhere(
+      (m) => m.speaker == 'human_agent' || m.speaker == 'ai',
+      orElse: () => _transcript.first,
+    );
+
+    return Stack(
+      children: [
+        // Camera Viewfinder Simulation Overlay (if enabled)
+        if (_isCameraActive)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.85),
+              padding: const EdgeInsets.all(20),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: Colors.cyanAccent.withOpacity(0.8),
+                            width: 2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.filter_center_focus_rounded,
+                              size: 48, color: Colors.cyanAccent),
+                          const SizedBox(height: 8),
+                          Text(
+                            'AI Visual Diagnostic Scan',
+                            style: GoogleFonts.spaceGrotesk(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.cyanAccent),
+                          ),
+                          Text(
+                            'Targeting Lower Hose Clamp HC-500',
+                            style: GoogleFonts.roboto(
+                                fontSize: 9, color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: IconButton(
+                      onPressed: () => setState(() => _isCameraActive = false),
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Normal Voice Calling HUD
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Column(
+            children: [
+              // If escalated, display the AI Handover Briefing Card to Service Desk
+              if (_isEscalatedToHuman) ...[
+                _buildHandoverBriefingCard(),
+                const SizedBox(height: 12),
+              ],
+
+              // Animated Glowing Voice Orb
+              Center(
+                child: SizedBox(
+                  width: _isEscalatedToHuman ? 110 : 135,
+                  height: _isEscalatedToHuman ? 110 : 135,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer Pulse Ring
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, _) => Container(
+                          width: (_isEscalatedToHuman ? 100 : 125) +
+                              (20 * _pulseController.value),
+                          height: (_isEscalatedToHuman ? 100 : 125) +
+                              (20 * _pulseController.value),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: (_humanSpeaking
+                                      ? const Color(0xFF38BDF8)
+                                      : (_aiSpeaking
+                                          ? const Color(0xFF06B6D4)
+                                          : const Color(0xFF4F46E5)))
+                                  .withOpacity(
+                                      0.25 * (1 - _pulseController.value)),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Rotating Gradient Glow Halo
+                      AnimatedBuilder(
+                        animation: _voiceOrbController,
+                        builder: (context, _) => Transform.rotate(
+                          angle: _voiceOrbController.value * 2 * math.pi,
+                          child: Container(
+                            width: _isEscalatedToHuman ? 90 : 110,
+                            height: _isEscalatedToHuman ? 90 : 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: SweepGradient(
+                                colors: [
+                                  (_humanSpeaking
+                                          ? const Color(0xFF0284C7)
+                                          : const Color(0xFF4F46E5))
+                                      .withOpacity(0.1),
+                                  (_humanSpeaking
+                                          ? const Color(0xFF38BDF8)
+                                          : const Color(0xFF06B6D4))
+                                      .withOpacity(0.8),
+                                  const Color(0xFF8B5CF6).withOpacity(0.6),
+                                  (_humanSpeaking
+                                          ? const Color(0xFF0284C7)
+                                          : const Color(0xFF4F46E5))
+                                      .withOpacity(0.1),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Inner Orb Core with Equalizer Waves
+                      Container(
+                        width: _isEscalatedToHuman ? 74 : 88,
+                        height: _isEscalatedToHuman ? 74 : 88,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_humanSpeaking
+                                      ? const Color(0xFF0284C7)
+                                      : const Color(0xFF4F46E5))
+                                  .withOpacity(0.2),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            )
+                          ],
+                          border: Border.all(
+                            color: _humanSpeaking
+                                ? const Color(0xFF0284C7)
+                                : const Color(0xFF4F46E5),
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: _buildEqualizerBars(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Live Speaking Status Pill
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _humanSpeaking
+                      ? const Color(0xFFE0F2FE)
+                      : (_aiSpeaking
+                          ? const Color(0xFFEEF2FF)
+                          : const Color(0xFFF1F5F9)),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _humanSpeaking
+                        ? const Color(0xFFBAE6FD)
+                        : (_aiSpeaking
+                            ? const Color(0xFFC7D2FE)
+                            : const Color(0xFFE2E8F0)),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _humanSpeaking
+                          ? Icons.support_agent_rounded
+                          : (_aiSpeaking
+                              ? Icons.volume_up_rounded
+                              : Icons.hearing_rounded),
+                      size: 13,
+                      color: _humanSpeaking
+                          ? const Color(0xFF0369A1)
+                          : (_aiSpeaking
+                              ? const Color(0xFF4F46E5)
+                              : const Color(0xFF64748B)),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _humanSpeaking
+                          ? 'Specialist Ravi Kumar Speaking...'
+                          : (_aiSpeaking
+                              ? 'Apex-7 AI Speaking...'
+                              : 'Awaiting Operator Input'),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: _humanSpeaking
+                            ? const Color(0xFF0369A1)
+                            : (_aiSpeaking
+                                ? const Color(0xFF4338CA)
+                                : const Color(0xFF334155)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Live Spoken Subtitle Box
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              latestSpeakerMessage.speaker == 'human_agent'
+                                  ? Icons.record_voice_over_rounded
+                                  : Icons.chat_bubble_outline_rounded,
+                              size: 13,
+                              color: latestSpeakerMessage.speaker ==
+                                      'human_agent'
+                                  ? const Color(0xFF0284C7)
+                                  : const Color(0xFF4F46E5),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              latestSpeakerMessage.speaker == 'human_agent'
+                                  ? 'FIELD SPECIALIST (RAVI KUMAR)'
+                                  : 'LIVE AI AUDIO TRANSCRIPT',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: latestSpeakerMessage.speaker ==
+                                        'human_agent'
+                                    ? const Color(0xFF0369A1)
+                                    : const Color(0xFF4F46E5),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          latestSpeakerMessage.timestamp,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 9,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      latestSpeakerMessage.message,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        color: const Color(0xFF0F172A),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    // Entities Tag Pill
+                    if (latestSpeakerMessage.entities.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: latestSpeakerMessage.entities.map((e) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Text(
+                              e,
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0284C7),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // AI HANDOVER BRIEFING CARD (TRANSMITTED TO SERVICE DESK)
+  Widget _buildHandoverBriefingCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(
+                () => _isBriefingExpanded = !_isBriefingExpanded),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.sync_alt_rounded,
+                        size: 15, color: Color(0xFF16A34A)),
+                    const SizedBox(width: 6),
+                    Text(
+                      'AI HANDOVER BRIEFING TO FIELD DESK',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        color: const Color(0xFF166534),
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  _isBriefingExpanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  size: 18,
+                  color: const Color(0xFF16A34A),
+                ),
+              ],
+            ),
+          ),
+          if (_isBriefingExpanded) ...[
+            const Divider(height: 16, color: Color(0xFFBBF7D0)),
+            _buildBriefingPoint('Diagnostic Alert',
+                'ERR-704 Coolant Overheat (98.4°C @ 80% Load) on Generator ABC123'),
+            _buildBriefingPoint('Physical Observation',
+                'Lower clamp fitting dripping; screw thread stripped / loose'),
+            _buildBriefingPoint('Telemetry Anomaly',
+                'Manifold pressure 1.42 bar; temp spiked from 82°C to 98.4°C in 10m'),
+            _buildBriefingPoint('Asset Service History',
+                'Last hose replaced 18mo ago; 2 cooling tickets in 90d'),
+            _buildBriefingPoint('Recommended Part',
+                'OEM Kit #HC-500 reserved in Van #4 (Tech Ravi Kumar, ETA 12m)'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBriefingPoint(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              color: Color(0xFF16A34A),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF166534),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.roboto(
+                fontSize: 10,
+                color: const Color(0xFF14532D),
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEqualizerBars() {
     return AnimatedBuilder(
-      animation: _equalizerController,
+      animation: _waveController,
       builder: (context, _) {
         return Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(4, (index) {
-            double factor = math.sin((_equalizerController.value * math.pi) +
-                    (index * (math.pi / 4)))
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(5, (index) {
+            double factor = math.sin((_waveController.value * math.pi) +
+                    (index * (math.pi / 3)))
                 .abs();
-            double height = 4.0 + (factor * 12.0);
+            double height = 8.0 + (factor * 26.0);
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 1.5),
-              width: 3,
-              height: height,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              width: 3.5,
+              height: _aiSpeaking || _operatorSpeaking || _humanSpeaking
+                  ? height
+                  : 6.0,
               decoration: BoxDecoration(
-                color: _callStage == 6
-                    ? const Color(0xFF10B981)
-                    : Colors.indigoAccent,
-                borderRadius: BorderRadius.circular(2),
+                color: _humanSpeaking
+                    ? const Color(0xFF38BDF8)
+                    : (_aiSpeaking
+                        ? Colors.cyanAccent
+                        : const Color(0xFF818CF8)),
+                borderRadius: BorderRadius.circular(4),
               ),
             );
           }),
@@ -535,52 +1517,8 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     );
   }
 
-  // AGENTIC THOUGHT BAR
-  Widget _buildAgenticThoughtBar() {
-    return InkWell(
-      onTap: () => setState(() => _showToolLogs = !_showToolLogs),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xFF131E33),
-          border: Border(
-            bottom: BorderSide(color: const Color(0xFF1E293B)),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.psychology_rounded,
-                color: Colors.cyanAccent, size: 15),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                _isSynthesizing
-                    ? '⚡ AI Agent executing Freshworks MCP & Multimodal Reasoning...'
-                    : '⚡ Agentic Diagnostic Core: Cummins QSK19 Knowledge Active',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.cyanAccent,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Icon(
-              _showToolLogs
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              color: Colors.cyanAccent,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // TRANSCRIPT STREAM LIST
-  Widget _buildTranscriptStream() {
+  // 4B. FULL TRANSCRIPT & TOOLS STREAM VIEW
+  Widget _buildTranscriptStreamView() {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -597,42 +1535,82 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
 
   Widget _buildTranscriptItem(TranscriptMessage msg) {
     final isAI = msg.speaker == 'ai';
+    final isHumanAgent = msg.speaker == 'human_agent';
+    final isSystem = msg.speaker == 'system';
+
+    if (isSystem) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.hub_rounded, color: Color(0xFF0284C7), size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                msg.message,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment:
-            isAI ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment: (isAI || isHumanAgent)
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
         children: [
-          // Speaker Tag & Timestamp
+          // Speaker Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isAI) ...[
-                  const Icon(Icons.smart_toy_outlined,
-                      size: 11, color: Colors.indigoAccent),
+                if (isHumanAgent) ...[
+                  const Icon(Icons.support_agent_rounded,
+                      size: 12, color: Color(0xFF0284C7)),
                   const SizedBox(width: 4),
-                  Text('Apex-7 AI (Voice & Telemetry)',
+                  Text('Ravi Kumar (Lead Field Specialist)',
                       style: GoogleFonts.spaceGrotesk(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
-                          color: Colors.indigoAccent)),
+                          color: const Color(0xFF0284C7))),
+                ] else if (isAI) ...[
+                  const Icon(Icons.smart_toy_outlined,
+                      size: 11, color: Color(0xFF4F46E5)),
+                  const SizedBox(width: 4),
+                  Text('Apex-7 AI Core',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF4F46E5))),
                 ] else ...[
-                  Text('Arun Kumar',
+                  Text('Arun Kumar (Operator)',
                       style: GoogleFonts.spaceGrotesk(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF94A3B8))),
+                          color: const Color(0xFF64748B))),
                   const SizedBox(width: 4),
                   const Icon(Icons.person_outline,
-                      size: 11, color: Color(0xFF94A3B8)),
+                      size: 11, color: Color(0xFF64748B)),
                 ],
                 const SizedBox(width: 6),
                 Text(msg.timestamp,
                     style: GoogleFonts.spaceGrotesk(
-                        fontSize: 8, color: const Color(0xFF64748B))),
+                        fontSize: 8, color: const Color(0xFF94A3B8))),
               ],
             ),
           ),
@@ -640,20 +1618,36 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
           // Speech Bubble
           Container(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.76,
+              maxWidth: MediaQuery.of(context).size.width * 0.82,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isAI ? const Color(0xFF1E293B) : const Color(0xFF1E3A8A),
+              color: isHumanAgent
+                  ? const Color(0xFFF0FDF4)
+                  : (isAI
+                      ? Colors.white
+                      : const Color(0xFFEFF6FF)),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isAI ? 2 : 16),
-                bottomRight: Radius.circular(isAI ? 16 : 2),
+                bottomLeft: Radius.circular((isAI || isHumanAgent) ? 2 : 16),
+                bottomRight:
+                    Radius.circular((isAI || isHumanAgent) ? 16 : 2),
               ),
               border: Border.all(
-                color: isAI ? const Color(0xFF334155) : const Color(0xFF3B82F6),
+                color: isHumanAgent
+                    ? const Color(0xFFBBF7D0)
+                    : (isAI
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFFBFDBFE)),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,12 +1656,16 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                   msg.message,
                   style: GoogleFonts.roboto(
                     fontSize: 12,
-                    color: Colors.white,
+                    color: isHumanAgent
+                        ? const Color(0xFF14532D)
+                        : (isAI
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF1E3A8A)),
                     height: 1.35,
                   ),
                 ),
 
-                // Extracted Entities / Chips
+                // Extracted Entities
                 if (msg.entities.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Wrap(
@@ -678,12 +1676,10 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
+                          color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: isAI
-                                ? Colors.indigoAccent.withOpacity(0.5)
-                                : Colors.blueAccent.withOpacity(0.5),
+                            color: const Color(0xFFE2E8F0),
                           ),
                         ),
                         child: Text(
@@ -691,9 +1687,9 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: isAI
-                                ? Colors.cyanAccent
-                                : const Color(0xFF93C5FD),
+                            color: isHumanAgent
+                                ? const Color(0xFF15803D)
+                                : const Color(0xFF0284C7),
                           ),
                         ),
                       );
@@ -704,31 +1700,32 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
             ),
           ),
 
-          // Tool Invocation Footnote (if present)
-          if (_showToolLogs && msg.toolInvocation != null) ...[
+          // Tool Invocation Chip
+          if (msg.toolInvocation != null) ...[
             const SizedBox(height: 4),
             Container(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.76,
+                maxWidth: MediaQuery.of(context).size.width * 0.82,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF0B132B),
+                color: const Color(0xFFFEF3C7),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF1E293B)),
+                border: Border.all(color: const Color(0xFFFDE68A)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.data_object_rounded,
-                      size: 11, color: Colors.amberAccent),
-                  const SizedBox(width: 5),
+                      size: 11, color: Color(0xFFD97706)),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       msg.toolInvocation!,
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 9,
-                        color: Colors.amberAccent.shade100,
+                        color: const Color(0xFF92400E),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -749,9 +1746,9 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF334155)),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -762,16 +1759,16 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.indigoAccent),
+                        AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Apex-7 is reasoning with company telemetry...',
+                  'Apex-7 is executing diagnostics...',
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 10,
                     fontStyle: FontStyle.italic,
-                    color: const Color(0xFF94A3B8),
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -782,7 +1779,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     );
   }
 
-  // DYNAMIC PROMPT AREA (ADAPTIVE TROUBLESHOOTING ENGINE)
+  // 5. DYNAMIC PROMPT AREA (GUIDED INTERACTIVE STEPS + ESCALATION)
   Widget _buildDynamicPromptArea() {
     if (_callStage == 2) {
       return _buildPromptStage1SymptomIsolation();
@@ -795,13 +1792,13 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     }
   }
 
-  // STAGE 1: DYNAMIC SYMPTOM ISOLATION OPTIONS
+  // STAGE 1: SYMPTOM ISOLATION OPTIONS
   Widget _buildPromptStage1SymptomIsolation() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
-        border: Border(top: BorderSide(color: Color(0xFF334155))),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,27 +1806,51 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'AI PROMPT: OBSERVE & SELECT LIVE SYMPTOM',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  color: Colors.indigoAccent,
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.touch_app_rounded,
+                      size: 14, color: Color(0xFF0284C7)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'AI PROMPT • STEP 1 OF 2: ISOLATE SYMPTOM',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: const Color(0xFF0284C7),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.indigoAccent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
+              if (!_isEscalatedToHuman)
+                InkWell(
+                  onTap: _escalateToHumanServiceAgent,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0F2FE),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: const Color(0xFFBAE6FD), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.headset_mic_rounded,
+                            size: 11, color: Color(0xFF0284C7)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Call Service Agent',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0284C7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Text(
-                  'Step 1 of 2',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 9, color: Colors.indigoAccent),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -837,7 +1858,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
             title: '1. Fluid actively dripping at lower clamp fitting',
             subtitle: 'Wet staining visible around OEM silicone hose junction',
             icon: Icons.water_drop_rounded,
-            iconColor: Colors.blueAccent,
+            iconColor: const Color(0xFF0284C7),
             onTap: () => _onSelectSymptom(
               'fluid_dripping',
               'Apex, I see coolant visibly dripping from the lower hose clamp fitting while idling.',
@@ -849,7 +1870,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
             title: '2. Steam & boiling at expansion reservoir cap',
             subtitle: 'Pressure relief valve hissing; coolant reservoir boiling',
             icon: Icons.waves_rounded,
-            iconColor: Colors.amberAccent,
+            iconColor: const Color(0xFFD97706),
             onTap: () => _onSelectSymptom(
               'steam_venting',
               'Apex, steam is venting from the radiator expansion cap and boiling sounds inside the reservoir.',
@@ -861,7 +1882,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
             title: '3. No visible leak, but temperature spiked dry',
             subtitle: 'Temp gauge at 98°C; suspecting air lock or pump impeller',
             icon: Icons.thermostat_rounded,
-            iconColor: Colors.redAccent,
+            iconColor: const Color(0xFFDC2626),
             onTap: () => _onSelectSymptom(
               'air_lock',
               'Apex, no external leak is visible, but the block temperature climbed quickly to 98°C.',
@@ -873,13 +1894,13 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     );
   }
 
-  // STAGE 2: DYNAMIC ACTIONABLE IN-CALL TEST
+  // STAGE 2: GUIDED MECHANICAL / DIAGNOSTIC TEST
   Widget _buildPromptStage2ActionableTest() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
-        border: Border(top: BorderSide(color: Color(0xFF334155))),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,27 +1908,51 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'AI GUIDED TEST: EXECUTE WITH DRIVER',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  color: Colors.amberAccent,
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.build_circle_rounded,
+                      size: 14, color: Color(0xFFD97706)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'AI GUIDED TEST • STEP 2 OF 2: TORQUE CHECK',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: const Color(0xFFD97706),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.amberAccent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
+              if (!_isEscalatedToHuman)
+                InkWell(
+                  onTap: _escalateToHumanServiceAgent,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0F2FE),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: const Color(0xFFBAE6FD), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.headset_mic_rounded,
+                            size: 11, color: Color(0xFF0284C7)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Call Service Agent',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0284C7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Text(
-                  'Diagnostic Step 2',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 9, color: Colors.amberAccent),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -916,7 +1961,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
               title: 'A. Clamp screw spins freely (Stripped / Cracked)',
               subtitle: 'Cannot hold 28 Nm torque; clamp band fractured',
               icon: Icons.cancel_outlined,
-              iconColor: Colors.redAccent,
+              iconColor: const Color(0xFFDC2626),
               onTap: () => _onSelectActionTest(
                 testOutcome: 'clamp_stripped',
                 operatorSpoken:
@@ -970,7 +2015,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
               title: 'B. Bleeder valve opened, but water pump making cavitation noise',
               subtitle: 'Mechanical circulation failure; requires pump replacement',
               icon: Icons.cancel_outlined,
-              iconColor: Colors.redAccent,
+              iconColor: const Color(0xFFDC2626),
               onTap: () => _onSelectActionTest(
                 testOutcome: 'pump_failure',
                 operatorSpoken:
@@ -988,7 +2033,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
               title: 'A. Pressure cap seal degraded → Dispatch technician with cap',
               subtitle: 'Cap spring fatigued; unable to sustain 16 PSI',
               icon: Icons.report_problem_rounded,
-              iconColor: Colors.redAccent,
+              iconColor: const Color(0xFFDC2626),
               onTap: () => _onSelectActionTest(
                 testOutcome: 'cap_failure',
                 operatorSpoken:
@@ -1007,17 +2052,19 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     );
   }
 
-  // STAGE 3: RESOLUTION SUMMARY & CONFIRMATION
+  // STAGE 3: RESOLUTION CERTIFIED BANNER
   Widget _buildPromptStage3ResolutionCertified() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
-        color: _isSelfResolved ? const Color(0xFF064E3B) : const Color(0xFF1E293B),
+        color: _isSelfResolved
+            ? const Color(0xFFECFDF5)
+            : const Color(0xFFEFF6FF),
         border: Border(
           top: BorderSide(
             color: _isSelfResolved
-                ? const Color(0xFF10B981)
-                : const Color(0xFF6366F1),
+                ? const Color(0xFFA7F3D0)
+                : const Color(0xFFBFDBFE),
           ),
         ),
       ),
@@ -1031,8 +2078,8 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                     ? Icons.verified_rounded
                     : Icons.local_shipping_rounded,
                 color: _isSelfResolved
-                    ? const Color(0xFF34D399)
-                    : const Color(0xFF818CF8),
+                    ? const Color(0xFF059669)
+                    : const Color(0xFF2563EB),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1042,16 +2089,20 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                       ? 'OPERATOR SELF-RESOLUTION CERTIFIED!'
                       : 'AI DIAGNOSTIC DISPATCH CERTIFIED',
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _isSelfResolved
+                        ? const Color(0xFF065F46)
+                        : const Color(0xFF1E40AF),
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: _isSelfResolved
+                      ? const Color(0xFFD1FAE5)
+                      : const Color(0xFFDBEAFE),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -1060,8 +2111,8 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: _isSelfResolved
-                        ? const Color(0xFF34D399)
-                        : const Color(0xFFA5B4FC),
+                        ? const Color(0xFF047857)
+                        : const Color(0xFF1D4ED8),
                   ),
                 ),
               ),
@@ -1070,11 +2121,11 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
           const SizedBox(height: 6),
           Text(
             _isSelfResolved
-                ? 'Issue successfully resolved by Operator Arun Kumar via AI guided torque check. Ticket marked Resolved.'
-                : 'Verified: $_detectedRootCause. Part #HC-500 reserved in Van #4. Specialist Ravi Kumar assigned.',
+                ? 'Coolant leak resolved via 8mm clamp torque retighten. Telemetry stabilized at 84°C. Ticket marked CLOSED.'
+                : 'Verified: $_detectedRootCause. Part #HC-500 reserved in Van #4. Specialist Ravi Kumar dispatched.',
             style: GoogleFonts.roboto(
               fontSize: 11,
-              color: Colors.white70,
+              color: const Color(0xFF475569),
             ),
           ),
         ],
@@ -1082,7 +2133,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
     );
   }
 
-  // PROMPT OPTION CARD COMPONENT
+  // PROMPT OPTION CARD
   Widget _buildPromptOptionCard({
     required String title,
     required String subtitle,
@@ -1092,13 +2143,13 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF334155)),
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Row(
           children: [
@@ -1106,7 +2157,7 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: iconColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: iconColor, size: 16),
             ),
@@ -1120,90 +2171,111 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: const Color(0xFF0F172A),
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.roboto(
                       fontSize: 10,
-                      color: const Color(0xFF94A3B8),
+                      color: const Color(0xFF64748B),
                     ),
                   ),
                 ],
               ),
             ),
             const Icon(Icons.arrow_forward_ios_rounded,
-                size: 12, color: Color(0xFF64748B)),
+                size: 12, color: Color(0xFF94A3B8)),
           ],
         ),
       ),
     );
   }
 
-  // BOTTOM CONTROLS
+  // 6. BOTTOM CALL CONTROLS DOCK
   Widget _buildBottomCallControls() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF0B132B),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Audio Mute Toggle
-          IconButton(
-            onPressed: () => setState(() => _isMuted = !_isMuted),
-            icon: Icon(
-              _isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-              color: _isMuted ? const Color(0xFFEF4444) : Colors.white70,
-              size: 20,
-            ),
-            tooltip: _isMuted ? 'Unmute' : 'Mute',
+          // Mute Button
+          _buildCircleCallButton(
+            icon: _isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+            isActive: _isMuted,
+            activeColor: const Color(0xFFDC2626),
+            label: _isMuted ? 'Muted' : 'Mute',
+            onTap: () {
+              setState(() => _isMuted = !_isMuted);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  duration: const Duration(milliseconds: 900),
+                  backgroundColor: _isMuted
+                      ? const Color(0xFF991B1B)
+                      : const Color(0xFF065F46),
+                  content: Text(
+                    _isMuted ? 'Microphone Muted' : 'Microphone Active',
+                    style: GoogleFonts.spaceGrotesk(fontSize: 11),
+                  ),
+                ),
+              );
+            },
           ),
 
-          // Speaker Toggle
-          IconButton(
-            onPressed: () => setState(() => _isSpeakerOn = !_isSpeakerOn),
-            icon: Icon(
-              _isSpeakerOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-              color: _isSpeakerOn ? Colors.indigoAccent : Colors.white70,
-              size: 20,
-            ),
-            tooltip: 'Speaker',
+          // Speaker Button
+          _buildCircleCallButton(
+            icon: _isSpeakerOn
+                ? Icons.volume_up_rounded
+                : Icons.hearing_rounded,
+            isActive: _isSpeakerOn,
+            activeColor: const Color(0xFF4F46E5),
+            label: _isSpeakerOn ? 'Speaker' : 'Earpiece',
+            onTap: () => setState(() => _isSpeakerOn = !_isSpeakerOn),
           ),
 
-          const SizedBox(width: 8),
+          // Call Human Agent Escalation Button
+          _buildCircleCallButton(
+            icon: _isEscalatedToHuman
+                ? Icons.support_agent_rounded
+                : Icons.headset_mic_rounded,
+            isActive: _isEscalatedToHuman,
+            activeColor: const Color(0xFF0284C7),
+            label: _isEscalatedToHuman ? 'Specialist' : 'Call Desk',
+            onTap: _escalateToHumanServiceAgent,
+          ),
 
-          // Main Action Button
+          // Camera Share Button (Visual Inspection)
+          _buildCircleCallButton(
+            icon: _isCameraActive
+                ? Icons.videocam_rounded
+                : Icons.videocam_outlined,
+            isActive: _isCameraActive,
+            activeColor: const Color(0xFF0284C7),
+            label: 'Scan Cam',
+            onTap: () => setState(() => _isCameraActive = !_isCameraActive),
+          ),
+
+          const SizedBox(width: 4),
+
+          // Main Call Action Button (End Call & Rate)
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                widget.onCallComplete(
-                  dispatchRequired: !_isSelfResolved,
-                  resolutionNotes: _isSelfResolved
-                      ? 'Operator Arun Kumar resolved hose clamp leakage via guided 8mm torque retighten.'
-                      : 'Diagnostic certified: $_detectedRootCause. Dispatched Tech Ravi Kumar.',
-                  finalConfidence: _diagnosticConfidence,
-                  resolvedBy: _isSelfResolved
-                      ? 'Operator Arun Kumar (Customer Self-Fix)'
-                      : 'Ravi Kumar (L3 Field Specialist)',
-                  rootCause: _detectedRootCause,
-                );
-              },
+              onPressed: _finishAndSubmitCall,
               icon: Icon(
                 _callStage == 6
-                    ? Icons.check_circle_rounded
+                    ? Icons.rate_review_rounded
                     : Icons.call_end_rounded,
                 color: Colors.white,
                 size: 16,
               ),
               label: Text(
                 _callStage == 6
-                    ? 'Confirm & Apply Resolution'
-                    : 'End Call & Apply Current Data',
+                    ? 'Resolve & Rate'
+                    : 'End Call & Rate',
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -1215,15 +2287,65 @@ class _InCallTranscriptionWidgetState extends State<InCallTranscriptionWidget>
                     ? (_isSelfResolved
                         ? const Color(0xFF10B981)
                         : const Color(0xFF4F46E5))
-                    : const Color(0xFFEF4444),
+                    : const Color(0xFFDC2626),
                 padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 2,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCircleCallButton({
+    required IconData icon,
+    required bool isActive,
+    required Color activeColor,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? activeColor.withOpacity(0.12)
+                    : const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isActive ? activeColor : const Color(0xFFE2E8F0),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: isActive ? activeColor : const Color(0xFF64748B),
+                size: 17,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 8.5,
+                fontWeight: FontWeight.w600,
+                color: isActive ? activeColor : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
