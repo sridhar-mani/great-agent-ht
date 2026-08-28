@@ -276,43 +276,52 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding: const EdgeInsets.all(8),
-                                  child: const Icon(
-                                    Icons.settings_input_component_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _selectedAsset.name,
-                                      style: GoogleFonts.inter(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                        color: FlutterFlowTheme.of(context).primary,
-                                      ),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: FlutterFlowTheme.of(context).primary,
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    Text(
-                                      '${_selectedAsset.productModel} · ${_selectedAsset.location}',
-                                      style: GoogleFonts.roboto(
-                                        fontSize: 11,
-                                        color: FlutterFlowTheme.of(context).primary,
-                                      ),
+                                    padding: const EdgeInsets.all(8),
+                                    child: const Icon(
+                                      Icons.settings_input_component_rounded,
+                                      color: Colors.white,
+                                      size: 18,
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _selectedAsset.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: FlutterFlowTheme.of(context).primary,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_selectedAsset.productModel} · ${_selectedAsset.location}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.roboto(
+                                            fontSize: 11,
+                                            color: FlutterFlowTheme.of(context).primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
@@ -424,11 +433,14 @@ class _IssueReportWidgetState extends State<IssueReportWidget> {
                                         size: 16,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Photo captured: Fluid leak detected at lower clamp',
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 11,
-                                          color: Colors.white,
+                                      Flexible(
+                                        child: Text(
+                                          'Photo captured: Fluid leak detected at lower clamp',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 11,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
                                     ],

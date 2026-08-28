@@ -957,51 +957,60 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, _) => Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: alert.severityColor.withOpacity(0.25),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: alert.severityColor
-                                .withOpacity(0.4 * _pulseAnimation.value),
-                            blurRadius: 8 * _pulseAnimation.value,
-                          )
+              Expanded(
+                child: Row(
+                  children: [
+                    AnimatedBuilder(
+                      animation: _pulseAnimation,
+                      builder: (context, _) => Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: alert.severityColor.withOpacity(0.25),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: alert.severityColor
+                                  .withOpacity(0.4 * _pulseAnimation.value),
+                              blurRadius: 8 * _pulseAnimation.value,
+                            )
+                          ],
+                        ),
+                        child: Icon(Icons.warning_amber_rounded,
+                            color: alert.severityColor, size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            alert.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: const Color(0xFFFCA5A5),
+                            ),
+                          ),
+                          Text(
+                            'Asset: ${_activeAsset.name}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.roboto(
+                              fontSize: 10,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
                         ],
                       ),
-                      child: Icon(Icons.warning_amber_rounded,
-                          color: alert.severityColor, size: 18),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        alert.title,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: const Color(0xFFFCA5A5),
-                        ),
-                      ),
-                      Text(
-                        'Asset: ${_activeAsset.name}',
-                        style: GoogleFonts.roboto(
-                          fontSize: 10,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
@@ -1155,51 +1164,60 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, _) => Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.25),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF10B981)
-                                .withOpacity(0.4 * _pulseAnimation.value),
-                            blurRadius: 8 * _pulseAnimation.value,
-                          )
+              Expanded(
+                child: Row(
+                  children: [
+                    AnimatedBuilder(
+                      animation: _pulseAnimation,
+                      builder: (context, _) => Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.25),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981)
+                                  .withOpacity(0.4 * _pulseAnimation.value),
+                              blurRadius: 8 * _pulseAnimation.value,
+                            )
+                          ],
+                        ),
+                        child: const Icon(Icons.verified_rounded,
+                            color: Color(0xFF34D399), size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PREVENTIVE SERVICE APPOINTMENT CONFIRMED',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: const Color(0xFF6EE7B7),
+                            ),
+                          ),
+                          Text(
+                            'Work Order Ref: REQ-78234-HC • Pre-emptive Window',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.roboto(
+                              fontSize: 10,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
                         ],
                       ),
-                      child: const Icon(Icons.verified_rounded,
-                          color: Color(0xFF34D399), size: 18),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'PREVENTIVE SERVICE APPOINTMENT CONFIRMED',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: const Color(0xFF6EE7B7),
-                        ),
-                      ),
-                      Text(
-                        'Work Order Ref: REQ-78234-HC • Pre-emptive Window',
-                        style: GoogleFonts.roboto(
-                          fontSize: 10,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: () => setState(() => _isAppointmentDismissed = true),
                 child: Container(
@@ -2429,7 +2447,7 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
 
   Widget _buildFleetStatCard(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -2440,6 +2458,8 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
         children: [
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.spaceGrotesk(
               fontSize: 10,
               fontWeight: FontWeight.bold,
@@ -2447,12 +2467,16 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: color,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -2532,55 +2556,65 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: asset.statusColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        asset.category == 'Generators'
-                            ? Icons.power_rounded
-                            : (asset.category == 'Compressors'
-                                ? Icons.air_rounded
-                                : (asset.category == 'HVAC'
-                                    ? Icons.ac_unit_rounded
-                                    : (asset.category == 'Boilers'
-                                        ? Icons.local_fire_department_rounded
-                                        : Icons.smart_toy_rounded))),
-                        color: asset.statusColor,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          asset.name,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: FlutterFlowTheme.of(context).primaryText,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: asset.statusColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        Text(
-                          asset.productModel,
-                          style: GoogleFonts.roboto(
-                            fontSize: 11,
-                            color: FlutterFlowTheme.of(context).secondaryText,
-                          ),
+                        child: Icon(
+                          asset.category == 'Generators'
+                              ? Icons.power_rounded
+                              : (asset.category == 'Compressors'
+                                  ? Icons.air_rounded
+                                  : (asset.category == 'HVAC'
+                                      ? Icons.ac_unit_rounded
+                                      : (asset.category == 'Boilers'
+                                          ? Icons.local_fire_department_rounded
+                                          : Icons.smart_toy_rounded))),
+                          color: asset.statusColor,
+                          size: 20,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              asset.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: FlutterFlowTheme.of(context).primaryText,
+                              ),
+                            ),
+                            Text(
+                              asset.productModel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.roboto(
+                                fontSize: 11,
+                                color: FlutterFlowTheme.of(context).secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: FlutterFlowTheme.of(context).primary.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(6),
@@ -2594,10 +2628,10 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Container(
                       padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: asset.statusColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(6),
@@ -2619,19 +2653,29 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.place_rounded,
-                        size: 13,
-                        color: FlutterFlowTheme.of(context).secondaryText),
-                    const SizedBox(width: 4),
-                    Text(asset.location,
-                        style: GoogleFonts.roboto(
-                            fontSize: 11,
-                            color: FlutterFlowTheme.of(context).secondaryText)),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.place_rounded,
+                          size: 13,
+                          color: FlutterFlowTheme.of(context).secondaryText),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          asset.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.roboto(
+                              fontSize: 11,
+                              color: FlutterFlowTheme.of(context).secondaryText),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.speed_rounded,
                         size: 13,
@@ -2908,25 +2952,27 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Maintenance & Resolution History',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: FlutterFlowTheme.of(context).primaryText,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Maintenance & Resolution History',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Attribution by Role & Company Knowledge Contribution',
-                    style: GoogleFonts.roboto(
-                      fontSize: 12,
-                      color: FlutterFlowTheme.of(context).secondaryText,
+                    Text(
+                      'Attribution by Role & Company Knowledge Contribution',
+                      style: GoogleFonts.roboto(
+                        fontSize: 11,
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               IconButton(
                 onPressed: () {
@@ -3000,21 +3046,28 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.hub_rounded, color: Colors.cyanAccent, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'COMPANY DATA & AI ASSIST METRICS',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: Colors.cyanAccent,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.hub_rounded, color: Colors.cyanAccent, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'COMPANY DATA & AI ASSIST METRICS',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: Colors.cyanAccent,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -3204,35 +3257,42 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: record.roleColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: record.roleColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(record.roleIcon, color: record.roleColor, size: 16),
                       ),
-                      child: Icon(record.roleIcon, color: record.roleColor, size: 16),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      record.ticketId,
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: FlutterFlowTheme.of(context).primary,
+                      const SizedBox(width: 8),
+                      Text(
+                        record.ticketId,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: FlutterFlowTheme.of(context).primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '• ${record.date}',
-                      style: GoogleFonts.roboto(
-                        fontSize: 11,
-                        color: FlutterFlowTheme.of(context).secondaryText,
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '• ${record.date}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.roboto(
+                            fontSize: 11,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -3290,22 +3350,29 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.auto_awesome_rounded,
-                              size: 13,
-                              color: FlutterFlowTheme.of(context).primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Company Data & AI Input:',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: FlutterFlowTheme.of(context).primaryText,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(Icons.auto_awesome_rounded,
+                                size: 13,
+                                color: FlutterFlowTheme.of(context).primary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Company Data & AI Input:',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: FlutterFlowTheme.of(context).primaryText,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 6),
                       Text(
                         '${record.totalCompanyDataContribution}% Assisted',
                         style: GoogleFonts.spaceGrotesk(
@@ -3339,22 +3406,30 @@ class _AssetDashboardWidgetState extends State<AssetDashboardWidget>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.person_outline_rounded,
-                        size: 13, color: Color(0xFF64748B)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Solved by: ${record.resolvedBy}',
-                      style: GoogleFonts.roboto(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: FlutterFlowTheme.of(context).primaryText,
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person_outline_rounded,
+                          size: 13, color: Color(0xFF64748B)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Solved by: ${record.resolvedBy}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.roboto(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Audit Dossier',
